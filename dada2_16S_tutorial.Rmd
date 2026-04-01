@@ -157,12 +157,13 @@ Then, extract sample names. This can be tricky because we want to remove the _R1
 
 ### For simple filenames
 
-If your sample names are the prefix and you only want to remove the `_R1.fastq.gz` part, things are simple:
+If your sample names are the prefix of the filename, e.g. `sample1_R1.fastq.gz` for the forward, you only want to remove the `_R1.fastq.gz` part and it's relatively straightforward
 
 ```{r input_simple}
-sample.names <- gsub("_R[12]\\.fastq\\.gz$", "", basename(fnFs))
+sample.names <- gsub("_R1.fastq.gz", "", basename(fnFs), fixed = TRUE)
 ```
 
+This taxes the filename as a string, replaces `_R1.fastq.gz` with nothing (`""`), and saves it. Applied to the basename (filename) of each element in the `fnFs` vector, it creates a vector of your sample names.
 
 ### For more complex filenames
 
@@ -170,7 +171,7 @@ However, if your filenames look like `MI.M06271_0139.001.N729---N508.2024-1-PMB-
 
 ```{r input_complex}
 (sample.names <- gsub(
-  pattern = ".*\\.([^.]+_*)_R[12]\\.fastq\\.gz", 
+  pattern = ".*\\.([^.]+_*)_R1\\.fastq\\.gz", 
   replacement = "\\1", 
   x = basename(fnFs)))
 ```

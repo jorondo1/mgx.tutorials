@@ -1980,9 +1980,15 @@ approach.</p>
 <div id="for-simple-filenames" class="section level3" number="2.3.1">
 <h3><span class="header-section-number">2.3.1</span> For simple
 filenames</h3>
-<p>If your sample names are the prefix and you only want to remove the
-<code>_R1.fastq.gz</code> part, things are simple:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;_R[12]</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="fu">basename</span>(fnFs))</span></code></pre></div>
+<p>If your sample names are the prefix of the filename,
+e.g. <code>sample1_R1.fastq.gz</code> for the forward, you only want to
+remove the <code>_R1.fastq.gz</code> part and it’s relatively
+straightforward</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;_R1.fastq.gz&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="fu">basename</span>(fnFs), <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>This taxes the filename as a string, replaces
+<code>_R1.fastq.gz</code> with nothing (<code>&quot;&quot;</code>), and saves it.
+Applied to the basename (filename) of each element in the
+<code>fnFs</code> vector, it creates a vector of your sample names.</p>
 </div>
 <div id="for-more-complex-filenames" class="section level3" number="2.3.2">
 <h3><span class="header-section-number">2.3.2</span> For more complex
@@ -1996,7 +2002,7 @@ up to and including the last period <em>preceding</em> the sample name.
 Here’s the formula, and below is a detailed explanation you should
 consult if this doesn’t work for you:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>(sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">&quot;.*</span><span class="sc">\\</span><span class="st">.([^.]+_*)_R[12]</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz&quot;</span>, </span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">&quot;.*</span><span class="sc">\\</span><span class="st">.([^.]+_*)_R1</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz&quot;</span>, </span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">replacement =</span> <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1&quot;</span>, </span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">basename</span>(fnFs)))</span></code></pre></div>
 <details>
