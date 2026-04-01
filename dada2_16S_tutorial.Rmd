@@ -1,0 +1,722 @@
+---
+title: "DADA2 - 16S rRNA Processing Tutorial"
+author: "Jonathan Rondeau-Leclaire"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 2
+    theme: flatly
+    highlight: tango
+    number_sections: true
+    css: dada2_16S_tutorial.css
+---
+
+<div class="callout-note">
+**About this tutorial**  
+This pipeline is adapted for paired-end Illumina amplicon data, using the 16S rRNA (V5–V7 region; primers 799F/1115R) as an example. For more details on the DADA2 algorithm, refer to the [original DADA2 tutorial](https://benjjneb.github.io/dada2/tutorial.html) and the [Callahan et al. 2016 paper](https://www.nature.com/articles/nmeth.3869).
+</div>
+
+---
+
+# Setup {.tabset}
+```{r, echo = FALSE}
+knitr::opts_chunk$set(eval = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
+
+# copy 
+klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to copy', position = c('top', 'right'), tooltip_success = 'Done')
+
+# unloadNamespace("mgx.tools"); devtools::install_github("jorondo1/mgx.tools", force = TRUE); library(mgx.tools)
+
+```
+
+The pipeline relies on a handful of core packages. `mgx.tools` is an in-house package that wraps several verbose utility steps (primer counting, cutadapt execution, chimera reporting, read tracking) so that the main pipeline script stays focused on the actual data processing decisions.
+
+Choose the right tab depending on whether you want to setup to run locally on your computer, or via the ip34/Mammoth cluster.
+
+## ip34/Mammoth
+
+If this is your first time using R on ip34, first follow the [ip34 setup instructions](https://github.com/jorondo1/misc_scripts/blob/main/init_ip34.md). 
+
+It is highly recommended to work in a tmux session, because certain processes can take long execution times if you have many samples. tmux sessions are explained in the ip34 setup instructions.
+
+Then, load the R environment and dependencies:
+
+```{bash ip34}
+module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
+```
+
+If this returned an error, make sure to go through the ip34 setup instructions linked above!
+
+Then start R:
+
+```{bash}
+nice R
+```
+
+Your shell now accepts R commands. Define the path to the `cutadapt` executable, and the number of cores to use:
+
+```{r cutadapt_ip34}
+path_cutadapt <- '/cvmfs/soft.mugqic/CentOS6/software/cutadapt/cutadapt-2.10/bin/cutadapt'
+
+ncores <- 24
+```
+
+<div class="callout-ip34">
+Using `nice` before a command (here, to start R) distributes core usage equitably among users. 24 is a reasonably high number of cores for ip34 (there are 92). Whichever cluster you are on, remember to think of others using it; don't be a corehogger!
+</div>
+
+## Local setup
+
+If working locally, you need to install `cutadapt` and find the executable in your program files. You can follow [these instructions](https://cutadapt.readthedocs.io/en/stable/installation.html) (see Windows section if needed) to install `cutadapt` on your machine. Then, in R, define a path to the executable, which might look like this if you installed `cutadapt` using miniconda:
+
+```{r cutadapt_local}
+path_cutadapt <- '~/miniconda3/envs/cutadapt/bin/cutadapt'
+
+ncores <- parallel::detectCores() - 1 # for Mac
+ncores <- FALSE # for Windows; untested, some wrapper functions may not work. Report them on github: https://github.com/jorondo1/misc_scripts/issues
+```
+
+<div class="callout-warning">
+Windows cannot handle multiple cores; execute the appropriate command. On Mac, the above `detectCores() - 1` command sets you up to use all but one core; you can change this if you want to use all of them.
+</div>
+
+# R environment configuration
+ 
+## Install/load packages
+
+Install these packages if you don't already have them (if unsure, you can check each by using trying to load them, e.g. `library("devtools")`).
+
+```{r, eval = FALSE}
+install.packages(c("devtools","BiocManager", "tidyverse"))
+library(devtools)
+library(BiocManager)
+BiocManager::install(c("Biostrings", "ShortRead"))
+devtools::install_github(c("trinker/pacman", "jorondo1/mgx.tools"))
+```
+
+<div class="callout-note">
+Packages only need to be _installed_ once per machine/environment. Next, we load them; this needs to be done every time you open a new R session! Read more about package installation vs. loading [here.](https://www.dataquest.io/blog/install-package-r/)
+</div>
+
+```{r env}
+library(pacman)
+p_load(dada2, tidyverse, mgx.tools, Biostrings, ShortRead, parallel, update = FALSE)
+```
+
+## Environment variables
+
+Define your primers (edit for your amplicon):
+```{r config}
+FWD <- "AACMGGATTAGATACCCKG"  # 799F
+REV <- "AGGGTTGCGCTCGTTG"     # 1115R
+```
+
+Define project directories:
+
+```{r config2}
+# --- set to directory parent to your raw files directory:
+path_data <- normalizePath('./data/16S') 
+
+# --- After executing the following command, manually put your fastqs in this directory:: 
+path_raw <- file.path(path_data, '0_raw')
+if (!dir.exists(path_raw))     dir.create(path_raw, recursive = TRUE)
+
+# --- Create additional folders for the rest of the pipeline
+path_filt <- file.path(path_data, '1_filtN')
+path_cut <- file.path(path_data, '2_cutadapt')
+path_out <- file.path(path_data, '4_out')
+path_summary <- file.path(path_data, 'X_DADA2_Summary')
+
+# --- Create output directories:
+if (!dir.exists(path_filt))    dir.create(path_filt)
+if (!dir.exists(path_cut))     dir.create(path_cut)
+if (!dir.exists(path_out))     dir.create(path_out)
+if (!dir.exists(path_summary)) dir.create(path_summary)
+```
+
+<div class="callout-note">
+**Directory numbering convention:** Directories are prefixed with integers (`0_raw`, `1_filtN`, `2_cutadapt`, `3_filtered`, `4_out`) to match the pipeline steps and keep them ordered in the file system. `X_DADA2_Summary` collects all diagnostic plots and reports.
+</div>
+
+## Input Files
+
+DADA2 expects one pair of gzipped FASTQ files per sample, named consistently. 
+
+Here we assume the pattern `SampleName_R1.fastq.gz` / `SampleName_R2.fastq.gz`. If not, the `pattern =` parameter should be adjusted (or for example if your fastqs are not compressed, they will be missing the .gz ending). The `$` 
+
+```{r input}
+fnFs <- sort(list.files(path_raw, pattern = "\\.[^.]*_R1\\.fastq\\.gz$", full.names = TRUE))
+fnRs <- sort(list.files(path_raw, pattern = "_R2.fastq.gz$", full.names = TRUE))
+
+# Extract sample names [adjust this depending on your filename patterns]:
+(sample.names <- gsub(
+  pattern = ".*\\.([^.]+_*)_R[12]\\.fastq\\.gz", 
+  replacement = "\\1", 
+  x = basename(fnFs)))
+
+```
+
+<details>
+
+<summary>
+What does the `gsub()` pattern do and how do I adjust it to fit my data?
+</summary>
+
+regex (regular expressions) are ways to identify patterns in text string and can be used to extract or modify them by referring to sets of rules. Here is a [great cheat sheet](https://cheatography.com/davechild/cheat-sheets/regular-expressions/) to help build your own regex.
+
+You will almost certainly have to modify the string passed to `pattern` in the command above to fit your data.
+
+For a filename like `./0_raw/MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_16S_R1.fastq.gz`, we want to extract `2024-1-PMB-LI-LE-1_16S`. Here's how the gsub command above does that:
+
+- `.*\\.` captures everything up to and including the last period The `.*` is greedy, so it gobbles as far right as it can, meaning it naturally stops at the last dot in the filename. `\\.` refers to a literal period, because in regex, just `.` means "any character"; the `\\` are preventing regex from "interpreting" the period.
+
+- `([^.]+_*)` captures what comes after the last period (up until `_R1` or `_R2`, *because* these are captured by the block described below). The `[^.]+` means "one or more characters that are not a period", and `_*` allows for optional trailing underscores. The parentheses `()` mark this as capture group 1, which is the part we want to keep.
+
+- `_R[12]\\.fastq\\.gz` matches the literal ending `_R1.fastq.gz` or `_R2.fastq.gz`. 
+
+- The `replacement = "\\1"` argument says to replace whatever matched the pattern with only the capture group 1.
+
+</details>
+
+Write a simple tsv file with sample names for reference.
+
+```{r}
+write_delim(data.frame(sample.names), file.path(path_summary, 'sample_names.tsv'))
+```
+
+---
+
+# N-filtering {#step1}
+
+Before primer removal, we remove reads containing ambiguous bases (Ns) and low-complexity reads. This is a lightweight pre-filter; it does **not** apply quality thresholds.
+
+```{r nfilt}
+fnFs.filtN <- file.path(path_data, "1_filtN", basename(fnFs))
+fnRs.filtN <- file.path(path_data, "1_filtN", basename(fnRs))
+
+out.N <- filterAndTrim(
+  fnFs, fnFs.filtN,
+  fnRs, fnRs.filtN,
+  maxN = 0,         # reject any read containing an N
+  rm.lowcomplex = TRUE,    # remove low-complexity reads (see note below)
+  multithread = ncores
+)
+
+names(fnFs.filtN) <- sample.names
+names(fnRs.filtN) <- sample.names
+rownames(out.N) <- sample.names
+
+head(out.N)
+```
+
+<div class="callout-note">
+**`rm.lowcomplex = TRUE`:** Low-complexity reads (e.g. long homopolymer stretches) can cause issues downstream. This option was added following a known DADA2 issue with certain sequencing runs — see [GitHub #2045](https://github.com/benjjneb/dada2/issues/2045#issuecomment-2452299127).
+</div>
+
+---
+
+# Primer removal (Cutadapt) {#step2}
+
+Primers must be removed before DADA2 error modelling, because primer sequences are not biological signal and will confound the error model. We use [Cutadapt](https://cutadapt.readthedocs.io/).
+
+## Check primer occurrence
+
+This step checks how often each primer (in all four orientations) appears in the raw reads.
+
+```{r primer-check-pre}
+mgx.tools::primer_occurence(fnFs.filtN, fnRs.filtN, FWD, REV, ncores = ncores)
+```
+
+You should see the forward primer predominantly in R1 (`FWD.ForwardReads`) and the reverse primer predominantly in R2 (`REV.ReverseReads`). Significant presence of reverse-complements in both reads is expected for shorter amplicons where read-through occurs.
+
+## Run Cutadapt
+
+```{r cutadapt}
+fnFs.cut <- file.path(path_cut, basename(fnFs))
+fnRs.cut <- file.path(path_cut, basename(fnRs))
+
+mclapply(
+  seq_along(fnFs),
+  mgx.tools::run_cutadapt,
+  cutadapt_path = path_cutadapt,
+  # Remove FWD primer and reverse-complement of REV from R1
+  R1.flags = paste("-g", FWD, "-a", dada2:::rc(REV)),
+  # Remove REV primer and reverse-complement of FWD from R2
+  R2.flags = paste("-G", REV, "-A", dada2:::rc(FWD)),
+  mc.cores = ncores
+)
+```
+
+<details>
+
+<summary>
+Learn what happened here.
+</summary>
+
+The above command should run as-is on Mac and Linux, but it's always good to understand what we are doing while we are doing it! The `mclapply()` command runs adapter cutting processes on multiple samples in parallel to accelerate things. It passes the adapter sequences (and their reverse complements) to `cutadapt`'s parameters, which are the following:
+
+- `-g` / `-G`: trim adapter from the **5' end** (primers)  
+- `-a` / `-A`: trim adapter from the **3' end** (reverse-complements of the opposite primer, present when the amplicon is shorter than the read)  
+- `-n 2`: allow up to 2 rounds of adapter trimming per read (ensures both adapters are removed when both are present)  
+- There is also `-m 21` length bounds that are set internally in `mgx.tools::run_cutadapt()`, which discard reads that are too short to be biological after trimming — see [GitHub #2045](https://github.com/benjjneb/dada2/issues/2045#issuecomment-2449416862)
+</details>
+
+## Verify primer removal
+
+```{r primer-check-post}
+mgx.tools::primer_occurence(fnFs.cut, fnRs.cut, FWD, REV, ncores = ncores)
+```
+
+All primer counts should be zero (or very close to zero). If not, check your primer sequences and orientations before continuing.
+
+Generate a list of primer-trimmed files:
+
+```{r cutadapt-files}
+cutFs <- sort(list.files(path_cut, pattern = "_R1.fastq.gz", full.names = TRUE))
+cutRs <- sort(list.files(path_cut, pattern = "_R2.fastq.gz", full.names = TRUE))
+```
+
+---
+
+# Quality filtering {#step3}
+
+This is where quality-based decisions are made. The goal is to balance retaining enough reads while discarding low-quality sequence that would inflate error rates.
+
+## Quality profiles: raw reads
+
+Quality profiles should be inspected **before** setting truncation parameters. These plots show per-position quality scores across randomly selected samples and across all samples (aggregated).
+
+```{r qplot-raw}
+plot_list <- mgx.tools::gen_qplots(Fs = cutFs, Rs = cutRs, nsam = 4)
+mgx.tools::save_qplots(plot_list = plot_list,
+            out_dir = path_summary,
+            step_id = 'raw')
+```
+
+## Filter and trim {#filterAndTrim}
+
+```{r filter}
+filtFs <- file.path(path_data, "3_filtered", basename(cutFs))
+filtRs <- file.path(path_data, "3_filtered", basename(cutRs))
+
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+out <- filterAndTrim(
+  cutFs, filtFs, cutRs, filtRs,
+  maxEE = c(2, 2), 
+  truncLen = c(190, 140),
+  minLen = 50, 
+  rm.phix = TRUE, 
+  compress = TRUE,
+  multithread = ncores
+)
+
+rownames(out) <- sample.names
+```
+
+<div class="callout-note">
+**`truncLen`:** This is the most dataset-specific parameter in the pipeline. Quality typically degrades near the 3' end of reads. Set truncation lengths where quality drops consistently below Q25–30. For 16S V5-V7 with 250 bp paired-end reads, values around `truncLen = c(190, 140)` are common, but **always verify with your own quality plots**. The truncated reads must still overlap sufficiently for merging ([see below](#mergePairs)). A minimum overlap of 12 bp is used here, so ensure `truncLen[1] + truncLen[2] - amplicon_length ≥ 12`.
+
+**`maxEE`:** This filter is based on the sum of error probabilities, Maximum Expected Errors, as described in [Edgar & Flyvbjerg 2015](https://doi.org/10.1093/bioinformatics/btv401). It is generally more informative than a simple quality score cutoff. Values of `c(2, 2)` are standard; `c(4, 4)` can help retain more reads from lower-quality runs, at a modest cost in accuracy. However, retaining as many reads as possible **should not be an aim** because we are estimating relative abundances! Total read count is irrelevant. If this sounds strange to you, [read this](see https://github.com/benjjneb/dada2/issues/2136#issuecomment-3053851832). 
+</div>
+
+
+<div class="callout-danger">
+**For ITS and other variable-length amplicons:** Do **not** set `truncLen` because the ITS region has highly variable length and truncation will bias against shorter ASVs. Instead, rely entirely on `maxEE` for quality filtering, and use `minLen` to discard very short reads. You can also add `truncQ = 2 as suggested in the [official ITS tutorial](https://benjjneb.github.io/dada2/ITS_workflow.html).
+</div>
+
+## Quality profiles: clean reads
+
+```{r qplot-clean}
+plot_list <- gen_qplots(Fs = filtFs, Rs = filtRs, nsam = 4)
+save_qplots(plot_list = plot_list,
+            out_dir = path_summary,
+            step_id = 'clean')
+```
+
+**Handle dropped samples:**
+
+Low-input samples (e.g. negative controls, failed extractions) may turn up empty after this step, whereby no fastq file will be written. DADA2 will error if it tries to process a non-existent file.
+
+```{r dropped}
+filtFs_survived <- mgx.tools::dropped_samples(filtFs)
+filtRs_survived <- mgx.tools::dropped_samples(filtRs)
+```
+
+---
+
+# Error model & denoising {#step4}
+
+The DADA2 error model is the core of the pipeline. It learns the rate at which each nucleotide substitution occurs as a function of quality score, using a subset of the data. This model is then used to distinguish true biological sequences from sequencing errors.
+
+## Learn error rates
+
+```{r errors}
+errF <- learnErrors(filtFs_survived, multithread = ncores)
+errR <- learnErrors(filtRs_survived, multithread = ncores)
+
+# Visualise the fitted error model — this is an important QC step
+err_plot <- plotErrors(errF, nominalQ = TRUE)
+
+ggsave(filename = file.path(path_summary, "error_plot.pdf"),
+       plot = err_plot, bg = 'white',
+       width = 2000, height = 2000, units = 'px', dpi = 180)
+```
+
+
+<details>
+
+<summary>
+Interpreting error plots
+</summary>
+Each panel shows observed error rates (points) and the fitted model (line) for one substitution type, as a function of quality score. The fit should follow the points reasonably well, because theoretically, rates should decrease linearly as quality score increases. In general, the fit should be decreasing. The goal here is not to get something close to the theoretical red line; it's to learn how errors behave and use this information to correct reads in the next step (denoising). 
+
+If plots have very weird shapes, I suggest [reading this](https://github.com/benjjneb/dada2/issues/1307#issuecomment-964599216). 
+
+If you need reassurance, look at [this issue](https://github.com/benjjneb/dada2/issues/1705).
+</details>
+
+## Denoising
+
+DADA2 uses the error model to partition reads into true sequence variants and noise.
+
+```{r denoise}
+dadaFs <- dada(filtFs_survived, err = errF, pool = 'pseudo', multithread = ncores)
+dadaRs <- dada(filtRs_survived, err = errR, pool = 'pseudo', multithread = ncores)
+```
+
+<details>
+<summary>
+What is pseudo-pooling?
+</summary>
+**`pool = 'pseudo'`:** Pooling allows DADA2 to detect rare ASVs that might be missed when samples are processed independently. Full pooling (`pool = TRUE`) is the most sensitive but memory-intensive; pseudo-pooling is a good compromise that approximates pooling without loading all data simultaneously. For most datasets, pseudo-pooling offers a meaningful gain in sensitivity over `pool = FALSE` with acceptable computational cost.
+</details>
+
+---
+
+# Sequence table
+
+## Merge paired reads {#mergePairs}
+
+Forward and reverse reads are merged at their overlapping region. Merging fails (reads are discarded) if the overlapping bases do not match sufficiently.
+
+```{r merge}
+mergers_pooled <- mergePairs(
+  dadaFs, filtFs_survived,
+  dadaRs, filtRs_survived,
+  minOverlap = 12, # minimum overlap in bp; increase if you have long amplicons
+  maxMismatch = 0 # the default; ASV with overlap mismatchs will be discarded
+)
+```
+
+Keep in mind that the longer the overlap, the higher the probabilities of a mismatch; even though errors were theoretically corrected, denoising is an imperfect process. Lack of overlap will obviously make you lose lots of reads, but an overlap that is too long might too. If lots of reads are lost here (see [Read tracking](#tracking) section below), you should revisit the filterAndTrim parameters ([see above](#filterAndTrim))
+
+We convert this into a sequence table:
+```{r seqtab}
+seqtab <- makeSequenceTable(mergers_pooled)
+```
+
+## Filter by expected amplicon length
+
+If you sequenced fixed-length amplicons (e.g., 16S), you should see high frequency within the expected amplicon length. Sequences outside this range are likely artefacts (non-specific amplification, chimeras not yet removed). Adjust the range to match your amplicon.
+
+```{r length-filter}
+table(nchar(getSequences(seqtab)))
+
+seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% 290:310]
+```
+
+For variable-length amplicons, you can skip this step by running
+```{r}
+seqtab2 <- seqtab
+```
+or simply increase the range to plausible values.
+
+## Remove chimeras
+
+Chimeric sequences are PCR artefacts formed by the spurious joining of two different template molecules. They are identified and removed based on whether a sequence can be reconstructed as a bimera of two more abundant sequences.
+
+```{r chimeras}
+seqtab.nochim <- removeBimeraDenovo(
+  seqtab2, method = "consensus", multithread = ncores, verbose = TRUE
+)
+
+# Report chimera statistics
+sink(file.path(path_summary, "chimera_report.txt"), append = FALSE, split = TRUE)
+mgx.tools::chimera_report(seqtab, seqtab.nochim)
+sink() # sink writes a report while displaying it on the console
+
+table(nchar(getSequences(seqtab.nochim)))  # length distribution after chimera removal
+```
+
+<div class="callout-note">
+**Expected chimera rates:** In a typical 16S run, 5–25% of ASVs may be chimeric, but they usually represent a small fraction of total reads (<5%). If chimera removal eliminates a large proportion of reads (>20%), this may indicate issues with primer removal, quality filtering, or the PCR protocol itself. See [discussion below](#tracking).
+</div>
+
+## Pre-filter ultra-rare ASVs
+
+Very rare ASVs (present in only 1–2 reads across the entire dataset) are most likely artefacts, and retaining them substantially increases the computational cost of taxonomic assignment. This is a conservative pre-filter; more thorough rarefaction-based filtering is typically applied during the downstream analysis. This parameter is somewhat arbitrary, have fun.
+
+```{r rare-asvs}
+# Drop ASVs with fewer than 2 total reads across all samples:
+seqtab.filt <- mgx.tools::drop_rare_asvs(seqtab.nochim, at_least_n = 2)
+dim(seqtab.filt)
+```
+
+**Save the resulting sequence table!**
+
+```{r save-seqtab}
+write_rds(seqtab.filt, file.path(path_out, 'seqtab.RDS'), compress = 'gz')
+```
+
+---
+
+# Read tracking {#tracking}
+
+A summary of read counts at each pipeline step is an essential QC tool. Large losses at a specific step point to specific problems. This will generate a two-panel plot with (1) the number of reads left at each steps for each sample, and (2) the proportion of reads lost between each step.
+
+```{r tracking}
+track_change <- mgx.tools::track_dada(
+  out.N = out.N,
+  out = out,
+  sample.names = sample.names,
+  dadaFs = dadaFs,
+  mergers = mergers_pooled,
+  seqtab.nochim = seqtab.nochim
+)
+
+p_load(patchwork)
+
+mgx.tools::plot_track_change(track_change) %>%
+  ggsave(filename = file.path(path_summary, "track_changes.pdf"),
+         plot = ., bg = 'white',
+         width = 1600, height = 2200, units = 'px', dpi = 180)
+```
+
+**General guidelines**
+
+Don't take these to the bank, but here's a very approximate guideline of what might be a red flag:
+
+| Step | Acceptable loss | Warning sign |
+|------|------|------|
+| N-filtering | < 5% | > 10%: quality/sequencing issue |
+| Cutadapt | < 10% | > 20%: wrong primer sequences |
+| filterAndTrim | 20–50% | > 70%: overly stringent truncation or quality issue |
+| Denoising | < 5% | > 20%: poor error model fit |
+| Merging | < 20% | > 50%: truncLen too aggressive; insufficient overlap |
+| Chimera removal | < 10% of reads | > 30%: PCR or primer issues |
+
+<details>
+<summary>
+If you lost a lot of reads, read this before doing anything.
+</summary>
+Final read count is, in itself, **irrelevant**; we are estimating *relative abundances*. Many people ask how to "optimise" their pipeline to reduce read loss; this should not be an aim! To quote the author, ["losing alot of [bad] reads is no loss at all"](https://github.com/benjjneb/dada2/issues/1772#issuecomment-1631744635)
+
+**HOWEVER,**
+
+It **is** a healthy reflex to ask yourself, *Why did I lose all these reads?* at a given step, especially if large proportions disappear. The above table gives clues on what to look for. Sometimes, it is what it is and nothing can be done about it except to tread forward with whatever is left (e.g., if you have PCR chimeras, remove them and move on!) 
+
+If not convinced, I encourage you to read the author's response to these questions:
+
+- [Large loss at chimera step](https://github.com/benjjneb/dada2/issues/2136#issuecomment-3053851832)
+- [Large loss on filtering because of bad quality reads](https://github.com/benjjneb/dada2/issues/2006)
+- [90% of ASVs are chimeric, but only ~13% reads are lost!](https://github.com/benjjneb/dada2/issues/330#issuecomment-329777198)
+</details>
+
+
+---
+
+# Taxonomic assignment {.tabset}
+
+<div class="callout-danger">
+**⚠️ Read before running taxonomy!**
+
+DADA2's native `assignTaxonomy()` uses a naïve Bayes classifier trained on a reference database. It works reasonably well for well-characterised markers like 16S, but has important limitations.
+
+Classification accuracy can be substantially overconfident with markers other than 16S and potentially ITS, and cause problems especially with markers that have lower specificity. For example, the AML2-WANDA primer pair, which better targets arbuscular mycorrhizal fungi (AMF) than the ITS amplicon, also captures certain arthropods, nematodes, and certain plants. If provided with a reference database that only contains AMF, `assignTaxonomy()` will assume that all ASVs are AMF and therefore classify all of them as Fungi and potentially at lower taxonomic levels as well.
+
+**DECIPHER's `IdTaxa` is a more conservative algorithm**. It is a machine learning approach with better calibrated confidence scores. See the [DECIPHER tutorial](http://www2.decc.nl/bioinformatics/DECIPHER/) and [Murali et al. 2018](https://doi.org/10.1186/s40168-018-0521-5).
+
+For 16S, `dada2::assignTaxonomy()` is acceptable, but still consider using `DECIPHER::IdTaxa()`.
+</div>
+
+## assignTaxonomy
+
+With assignTaxonomy(), you can use ready-compiled classifiers [here](https://zenodo.org/records/4587955). Download the appropriate files (including species assignment if you want this, but don't expect much with short reads 16S).
+
+```{r taxonomy}
+silva_train  <- "path/to/silva_nr99_v138.1_train_set.fa.gz"
+
+# Genus-level classification
+taxonomy <- assignTaxonomy(
+  seqtab.filt, silva_train,
+  tryRC = TRUE, 
+  multithread = ncores, # don't use more than 24
+  verbose = TRUE
+)
+```
+
+## DECIPHER
+
+Decipher also has pre-trained classifiers you can download [here](https://decipher.codes/Downloads.html). Note that the SILVA training set is not restricted to bacteria. It shouldn't matter as long as your primers are specific, but some ASVs are assigned to non-bacterial species, remember to remove them afterwards. 
+
+<details>
+<summary>
+Load this custom function
+</summary>
+Adapted from https://benjjneb.github.io/dada2/tutorial.html ; simply copy-paste this and execute it into your code. This function will eventually be added to the `mgx.tools` package.
+
+```{r}
+format_DECIPHER_for_dada2 <- function(ids, seqtab, ranks = NULL) {
+  
+  # If ranks not provided, extract them from the IdTaxa results
+  if (is.null(ranks)) {
+    # Get all unique ranks from the classifications
+    all_ranks <- unique(unlist(lapply(ids, function(x) x$rank)))
+    # Remove "Root" and sort by typical hierarchy
+    ranks <- all_ranks[all_ranks != "Root"]
+    message("Detected ranks: ", paste(ranks, collapse = ", "))
+  }
+  
+  # Convert the output object of class "Taxa" to a matrix 
+  # analogous to the output from assignTaxonomy
+  taxid <- t(sapply(ids, function(x) {
+    m <- match(ranks, x$rank)
+    taxa <- x$taxon[m]
+    taxa[startsWith(taxa, "unclassified_")] <- NA
+    taxa
+  }))
+  
+  colnames(taxid) <- ranks
+  rownames(taxid) <- getSequences(seqtab)
+  
+  perc_NA <- round(
+    100 * sum(is.na(taxid)) / (nrow(taxid) * ncol(taxid)),
+    2)
+  
+  message(paste(perc_NA, '% of NAs'))
+  
+  return(taxid)
+}
+```
+</details>
+
+```{r}
+# Extract ASVs
+dna <- DNAStringSet(getSequences(seqtab.filt)) 
+
+# Load the DECIPHER training set:
+silva_train <- 'data/ref_dbs/SILVA_SSU_r138_2_2024.RData'
+
+# Determine taxonomy
+ids <- IdTaxa(
+  test = dna,
+  trainingSet = silva_train,
+  strand = "both", 
+  processors = ncores,
+  verbose=TRUE) 
+
+# Build dada2-formatted taxonomy table (see function above)
+taxonomy <- format_DECIPHER_for_dada2(
+  ids, seqtab.filt,
+  ranks =  c('rootrank', 'kingdom', 'phylum', 'class', 'order', 'family', 'genus')
+)
+```
+
+# {-}
+
+Grab a coffee, this can take a while! (up to several hours if you have thousands of ASVs and few cores to work with). 
+
+Then, save the resulting taxonomy table!
+
+```{r save-taxtab}
+write_rds(taxonomy, file.path(path_out, 'taxonomy.RDS'), compress = 'gz')
+```
+
+<div class="callout-note">
+**Coming soon:** processing raw ASV sequence and taxonomy tables to build a relational (phyloseq) database to use as a starting point in ecological analyses.
+
+This includes more refined ways of filtering ASVs based on prevalence, abundance, and taxonomic classification. Coming up!
+</div>
+
+<details>
+<summary>
+Check classification rates
+</summary>
+
+This is a quick code to build a phyloseq object. For analyses, we encourage you to further filter your ASVs to remove ultra rare ones before doing this. Here, it allows us to analyse classification rates.
+
+
+
+```{r phyloseq}
+BiocManager::install("phyloseq")
+
+rownames(seqtab_16S) <- sample_names_clean
+
+ps <- phyloseq(
+  tax_table(tax_Species),
+  otu_table(seqtab_16S, taxa_are_rows = FALSE)
+)
+
+write_rds(ps, file.path(path_out, 'ps.rds'))
+```
+
+
+A useful sanity check: what proportion of ASVs (and reads) could be assigned at each taxonomic rank?
+
+```{r classrate}
+ps <- readRDS(file.path(path_out, 'ps.rds'))
+
+melted <- ps %>%
+  psmelt() %>%
+  filter(Abundance > 0) %>%
+  group_by(Sample) %>%
+  mutate(relAb = Abundance / sum(Abundance))
+
+ranks <- c('Family', 'Genus', 'Species')
+
+classification <- map(ranks, function(rank) {
+  melted %>%
+    filter(relAb > 0) %>%
+    select(Sample, !!sym(rank), relAb) %>%
+    mutate(classified = case_when(is.na(!!sym(rank)) ~ 0, TRUE ~ 1)) %>%
+    summarise(
+      asv_prop   = sum(classified) / n(),          # proportion of ASVs classified
+      relAb_prop = sum(classified * relAb)         # abundance-weighted proportion
+    ) %>%
+    pivot_longer(cols = c('relAb_prop', 'asv_prop'), names_to = 'proportion_type') %>%
+    mutate(taxRank = factor(rank, levels = ranks))
+}) %>% list_rbind()
+
+classification %>%
+  filter(proportion_type == 'asv_prop') %>%
+  mutate(proportion_type = case_when(
+    proportion_type == 'asv_prop'   ~ 'Proportion of ASVs',
+    proportion_type == 'relAb_prop' ~ 'Proportion of reads'
+  )) %>%
+  ggplot(aes(y = value, x = taxRank, fill = taxRank)) +
+  geom_line(aes(group = Sample), linewidth = 1, colour = 'grey') +
+  geom_boxplot() +
+  scale_colour_brewer(palette = 'Set2') +
+  theme_minimal() +
+  labs(y = 'Proportion of classified ASVs') +
+  theme(
+    axis.ticks.x    = element_blank(),
+    axis.title.x    = element_blank(),
+    legend.position = 'none'
+  )
+
+ggsave(file.path(path_summary, '16S_classrate.pdf'),
+       bg = 'white', width = 1600, height = 1600,
+       units = 'px', dpi = 260)
+```
+
+</details>
+---
+
+*For questions or issues with this pipeline, refer to the [DADA2 GitHub issues page](https://github.com/benjjneb/dada2/issues) for known bugs, or the [DADA2 forum](https://forum.qiime2.org/) for community support.*

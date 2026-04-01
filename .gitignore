@@ -1,0 +1,45 @@
+# outputs
+*.pdf
+*.png
+
+# Generic
+.DS_Store
+tmp/
+bak/
+*.bak
+.throttle/
+doc/
+logs/
+*.log
+archive/
+*.fa
+*.fastq*
+*.fastq.gz*
+*.fq.gz*
+*.sig
+*.bowtie2.txt
+*.tar.gz
+
+# R files
+.RData*
+.Rapp.history
+.Rhistory
+*.Rproj
+.Rproj.user
+*.[R][D][S]
+
+# specific
+ILL_pipelines/
+*kronagrams/
+*kreport 
+*.bowtie2.txt
+*.bracken
+*/Bracken*/*/*/*_temp.MPA.TXT
+*/Bracken*/*/*_taxonomy_nt
+*fastqc*html
+*fastqc.zip
+*fastqc/
+reads_mapping.tsv.gz
+
+radEmu_scores*
+Maaslin2/
