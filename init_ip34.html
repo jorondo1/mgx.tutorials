@@ -1835,7 +1835,7 @@ font-size: 0.95em;
 </script>
 <div class="callout-note">
 <p><strong>About this guide</strong><br />
-A quick guide to access ip34 (aka Mammouth)! Steps 0, 1 and 3 only need
+A quick guide to access ip34 (aka Mammouth)! Steps 1, 2 and 4 only need
 to be done once. If you need a quick primer on the bash language syntax,
 which is the language the code blocks below are written in, checkout
 Mike Lee’s <a href="https://astrobiomike.github.io/unix/unix-intro">awesome
@@ -1866,8 +1866,8 @@ once.</em></p>
 <div id="on-windows" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> On Windows</h2>
 <ol style="list-style-type: decimal">
-<li>Navigate to your home folder, typically under
-<code>C:\Users:\&lt;username&gt;\.ssh</code></li>
+<li>Navigate to the <code>.ssh</code> program in your home folder,
+typically under <code>C:\Users:\&lt;username&gt;\.ssh</code></li>
 <li>Open the config file; if there is none, right-click inside the .ssh
 folder and select New &gt; Text Document</li>
 <li>Add the following lines to the file:</li>
@@ -1918,7 +1918,7 @@ Cluster with the same user environment as Cedar and Graham (Slurm scheduler).
 
 ________________________________________________________________________________
           |                               |   Slurm |   Slurm |   Slurm
- Mp2b     | Memory/Cores              | --nodes | --mem   | --cpus-per-task
+ Mp2b     | Memory/Cores                    | --nodes | --mem   | --cpus-per-task
  nodetype |                               |   max   |   max   |   max
 ----------+-------------------------------+---------+---------+-----------------
  base     |  31 GB memory, 24 cores/node  |   1588  |   31G   |   24  
@@ -1926,31 +1926,35 @@ ________________________________________________________________________________
  xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
 __________|_______________________________|_________|_________|_________________</code></pre>
 <div class="callout-danger">
-<p>At this point, <strong>YOU MUST</strong> execute the following
-command, <strong>EACH AND EVERY TIME</strong> you log in.</p>
+<p><strong>You must</strong> execute the following command,
+<strong>EVERY TIME</strong> you log in.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
-you. <strong>Do not add the newgrp command to your bashrc, tempting as
-it may be.</strong></p>
+you.Do not add the newgrp command to your bashrc, tempting as it may
+be</p>
 </div>
 <hr />
 </div>
 <div id="initial-setup-ip34" class="section level1" number="4">
 <h1><span class="header-section-number">4</span> Initial setup
 (ip34)</h1>
-<p><em>You’ll only need to do this once, ever.</em> It will add a few
-lines to your <code>.bashrc</code> file, which is executed every time
-you login.</p>
-<div class="callout-warning">
-<p>Each command with <code>&gt;&gt;</code> will append something to the
+Add a few lines to your <code>.bashrc</code> file, which is executed
+every time you login.
+<div class="callout-danger">
+<p>You only need to do these once, forever!</p>
+</div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Sets up certain permissions: </span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc  <span class="co"># Creates a $ILAFORES variable</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc <span class="co"># Executes the .bashrc (happens every time you log in, but we need those variables now!)</span></span></code></pre></div>
+<div class="callout-note">
+<p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
 adding multiple lines to it.</p>
 </div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc                                                        <span class="co"># Sets up certain permissions</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc           <span class="co"># Allows access to certain programs (e.g. cutadapt)</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc                              <span class="co"># Creates a $ILAFORES variable</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc                                                                        <span class="co"># Executes the .bashrc (happens every time you log in, but we need those variables now!)</span></span></code></pre></div>
 <p>This setup will allow others within your group (def-ilafores) to
 write/execute files you’ve created, allow you to access certain programs
 on mugqic, and finally will create a simple variable you can use to

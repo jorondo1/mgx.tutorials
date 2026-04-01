@@ -23,7 +23,7 @@ klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to 
 
 <div class="callout-note">
 **About this guide**  
-A quick guide to access ip34 (aka Mammouth)! Steps 0, 1 and 3 only need to be done once. If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
+A quick guide to access ip34 (aka Mammouth)! Steps 1, 2 and 4 only need to be done once. If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
 </div>
 
 ---
@@ -50,7 +50,7 @@ echo ServerAliveInterval 60 >> ~/.ssh/config
 
 ## On Windows
 
-1. Navigate to your home folder, typically under `C:\Users:\<username>\.ssh`
+1. Navigate to the `.ssh` program in your home folder, typically under `C:\Users:\<username>\.ssh`
 2. Open the config file; if there is none, right-click inside the .ssh folder and select New > Text Document
 3. Add the following lines to the file:
 
@@ -104,7 +104,7 @@ Cluster with the same user environment as Cedar and Graham (Slurm scheduler).
 
 ________________________________________________________________________________
           |                               |   Slurm |   Slurm |   Slurm
- Mp2b 	  | Memory/Cores 	          | --nodes | --mem   | --cpus-per-task
+ Mp2b 	  | Memory/Cores 	                | --nodes | --mem   | --cpus-per-task
  nodetype |                               |   max   |   max   |   max
 ----------+-------------------------------+---------+---------+-----------------
  base     |  31 GB memory, 24 cores/node  |   1588  |   31G   |   24  
@@ -114,32 +114,36 @@ __________|_______________________________|_________|_________|_________________
 ```
 
 <div class="callout-danger">
-At this point, **YOU MUST** execute the following command, **EACH AND EVERY TIME** you log in.
+**You must** execute the following command, **EVERY TIME** you log in.
 
 ```bash
 newgrp def-ilafores
 ```
-
-Otherwise, any file you create will only be readable and writable by you. **Do not add the newgrp command to your bashrc, tempting as it may be.**
+Otherwise, any file you create will only be readable and writable by you.Do not add the newgrp command to your bashrc, tempting as it may be
 </div>
 
 ---
 
 # Initial setup (ip34)
 
-_You'll only need to do this once, ever._ It will add a few lines to your `.bashrc` file, which is executed every time you login.
-
-<div class="callout-warning">
-Each command with `>>` will append something to the `.bashrc` file. If you do them multiple times, you'll be adding multiple lines to it.
+Add a few lines to your `.bashrc` file, which is executed every time you login.
+<div class="callout-danger">
+You only need to do these once, forever!
 </div>
 
 ```{bash bashrc}
-echo umask 007 >> ~/.bashrc                                                        # Sets up certain permissions
-echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc           # Allows access to certain programs (e.g. cutadapt)
+# Sets up certain permissions: 
+echo umask 007 >> ~/.bashrc
+# Allows access to certain programs (e.g. cutadapt):
+echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc 
 echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc			
-echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc                              # Creates a $ILAFORES variable
-. ~/.bashrc                                                                        # Executes the .bashrc (happens every time you log in, but we need those variables now!)
+echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc  # Creates a $ILAFORES variable
+. ~/.bashrc # Executes the .bashrc (happens every time you log in, but we need those variables now!)
 ```
+
+<div class="callout-note">
+Each command with `>>` appends something to the `.bashrc` file. If you do them multiple times, you'll be adding multiple lines to it.
+</div>
 
 This setup will allow others within your group (def-ilafores) to write/execute files you've created, allow you to access certain programs on mugqic, and finally will create a simple variable you can use to navigate to the def-ilafores directory, which is where you should generally work from. To get there and, for example, create a new project (under the analysis folder would be the best place), I suggest adding another variable to your `.bashrc` that will let you use the path to your project directory without having to type it in its entirety every time.
 
