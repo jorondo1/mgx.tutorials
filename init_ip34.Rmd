@@ -8,7 +8,7 @@ output:
     toc_float:
       collapsed: false
       smooth_scroll: true
-    toc_depth: 2
+    toc_depth: 3
     theme: flatly
     highlight: tango
     number_sections: true
@@ -23,7 +23,9 @@ klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to 
 
 <div class="callout-note">
 **About this guide**  
-A quick guide to access ip34 (aka Mammouth)! Steps 1, 2 and 4 only need to be done once. If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
+I show you how to access UdeSherbrooke's ip34 (aka Mammouth) supercomputer. This node is only accessible to UdS students and requires DRAC sponsorship. 
+
+Steps 1, 2 and 4 only need to be done once. 
 </div>
 
 ---
@@ -47,6 +49,10 @@ touch ~/.ssh/config
 echo "Host *" >> ~/.ssh/config
 echo ServerAliveInterval 60 >> ~/.ssh/config
 ```
+
+<div class="callout-note">
+If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
+</div>
 
 ## On Windows
 
@@ -119,7 +125,7 @@ __________|_______________________________|_________|_________|_________________
 ```bash
 newgrp def-ilafores
 ```
-Otherwise, any file you create will only be readable and writable by you.Do not add the newgrp command to your bashrc, tempting as it may be
+Otherwise, any file you create will only be readable and writable by you.Do not add the newgrp command to your bashrc, tempting as it may be.
 </div>
 
 ---

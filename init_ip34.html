@@ -1835,11 +1835,10 @@ font-size: 0.95em;
 </script>
 <div class="callout-note">
 <p><strong>About this guide</strong><br />
-A quick guide to access ip34 (aka Mammouth)! Steps 1, 2 and 4 only need
-to be done once. If you need a quick primer on the bash language syntax,
-which is the language the code blocks below are written in, checkout
-Mike Lee’s <a href="https://astrobiomike.github.io/unix/unix-intro">awesome
-tutorial</a>.</p>
+I show you how to access UdeSherbrooke’s ip34 (aka Mammouth)
+supercomputer. This node is only accessible to UdS students and requires
+DRAC sponsorship.</p>
+<p>Steps 1, 2 and 4 only need to be done once.</p>
 </div>
 <hr />
 <div id="create-a-drac-account" class="section level1" number="1">
@@ -1862,6 +1861,11 @@ once.</em></p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">touch</span> ~/.ssh/config</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Host *&quot;</span> <span class="op">&gt;&gt;</span> ~/.ssh/config</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="bu">echo</span> ServerAliveInterval 60 <span class="op">&gt;&gt;</span> ~/.ssh/config</span></code></pre></div>
+<div class="callout-note">
+<p>If you need a quick primer on the bash language syntax, which is the
+language the code blocks below are written in, checkout Mike Lee’s <a href="https://astrobiomike.github.io/unix/unix-intro">awesome
+tutorial</a>.</p>
+</div>
 </div>
 <div id="on-windows" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> On Windows</h2>
@@ -1931,7 +1935,7 @@ __________|_______________________________|_________|_________|_________________
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
 you.Do not add the newgrp command to your bashrc, tempting as it may
-be</p>
+be.</p>
 </div>
 <hr />
 </div>
@@ -2106,7 +2110,7 @@ $(document).ready(function ()  {
 
     // establish options
     var options = {
-      selectors: "h1,h2",
+      selectors: "h1,h2,h3",
       theme: "bootstrap3",
       context: '.toc-content',
       hashGenerator: function (text) {
