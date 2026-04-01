@@ -1,7 +1,7 @@
 ---
 title: "Getting started on ip34 (Mammouth)"
-author: "Laforest-Lapointe Lab"
-date: "`r Sys.Date()`"
+author: "Jonathan Rondeau-Leclaire / Laforest-Lapointe Lab"
+date: "Last updated: `r Sys.Date()`"
 output:
   html_document:
     toc: true

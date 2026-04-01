@@ -1972,11 +1972,11 @@ consistently.</p>
 you have them):</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fnFs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;_R1</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>fnRs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;_R2</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
-<p>Then, extract sample names. This can be tricky because we want to
-remove the _R1.fastq.gz suffix, however, some platforms will also add a
-long string of characters at the beginning of files, unique to each
-sample. Here are two examples, but you might have to personalise your
-approach.</p>
+<p>Then, extract sample names from the forward read files. This can be
+tricky because we want to remove the <code>_R1.fastq.gz</code> suffix,
+however, some platforms will also add a long string of characters at the
+beginning of files, unique to each sample. Here are two examples, but
+you might have to personalise your approach.</p>
 <div id="for-simple-filenames" class="section level3" number="2.3.1">
 <h3><span class="header-section-number">2.3.1</span> For simple
 filenames</h3>
@@ -1990,8 +1990,8 @@ straightforward</p>
 Applied to the basename (filename) of each element in the
 <code>fnFs</code> vector, it creates a vector of your sample names.</p>
 </div>
-<div id="for-more-complex-filenames" class="section level3" number="2.3.2">
-<h3><span class="header-section-number">2.3.2</span> For more complex
+<div id="for-complex-filenames" class="section level3" number="2.3.2">
+<h3><span class="header-section-number">2.3.2</span> For complex
 filenames</h3>
 <p>However, if your filenames look like
 <code>MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_16S_R1.fastq.gz</code>,

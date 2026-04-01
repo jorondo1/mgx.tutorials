@@ -153,7 +153,7 @@ fnFs <- sort(list.files(path_raw, pattern = "_R1\\.fastq\\.gz$", full.names = TR
 fnRs <- sort(list.files(path_raw, pattern = "_R2\\.fastq\\.gz$", full.names = TRUE))
 ```
 
-Then, extract sample names. This can be tricky because we want to remove the _R1.fastq.gz suffix, however, some platforms will also add a long string of characters at the beginning of files, unique to each sample. Here are two examples, but you might have to personalise your approach.
+Then, extract sample names from the forward read files. This can be tricky because we want to remove the `_R1.fastq.gz` suffix, however, some platforms will also add a long string of characters at the beginning of files, unique to each sample. Here are two examples, but you might have to personalise your approach.
 
 ### For simple filenames
 
@@ -165,7 +165,7 @@ sample.names <- gsub("_R1.fastq.gz", "", basename(fnFs), fixed = TRUE)
 
 This taxes the filename as a string, replaces `_R1.fastq.gz` with nothing (`""`), and saves it. Applied to the basename (filename) of each element in the `fnFs` vector, it creates a vector of your sample names.
 
-### For more complex filenames
+### For complex filenames
 
 However, if your filenames look like `MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_16S_R1.fastq.gz`, it gets trickier. Here's how to solve this case where the actual filename is `2024-1-PMB-LI-LE-1_16S`. So we want to remove the `_R1.fastq.gz` suffix, but also (in this case) everything up to and including the last period *preceding* the sample name. Here's the formula, and below is a detailed explanation you should consult if this doesn't work for you:
 
