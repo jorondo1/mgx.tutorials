@@ -36,11 +36,16 @@ To work on ip34, you need a [Digital Research Alliance of Canada](https://ccdb.a
 
 ---
 
-# Initial setup (locally) {.tabset}
+# Initial setup (locally) 
 
+<div class="callout-danger">
+You only need to do this once, ever!
+</div>
+
+## Local configuration {.tabset}
 This will periodically send a signal to ip34 to make sure you don't spontaneously get logged out. _You only need to do this once._
 
-## On a Mac
+### On a Mac
 
 Open the Terminal app and run the following:
 
@@ -50,11 +55,8 @@ echo "Host *" >> ~/.ssh/config
 echo ServerAliveInterval 60 >> ~/.ssh/config
 ```
 
-<div class="callout-note">
-If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
-</div>
 
-## On Windows
+### On Windows
 
 1. Navigate to the `.ssh` program in your home folder, typically under `C:\Users:\<username>\.ssh`
 2. Open the config file; if there is none, right-click inside the .ssh folder and select New > Text Document
@@ -67,9 +69,13 @@ Host ip34.ccs.usherbrooke.ca
 
 Save it and quit. Then, open the PowerShell app and proceed with the next steps.
 
-# {-}
+## {-}
 
-### Setting up DUO 2FA
+<div class="callout-note">
+If you need a quick primer on the bash language syntax, which is the language the code blocks below are written in, checkout Mike Lee's [awesome tutorial](https://astrobiomike.github.io/unix/unix-intro).
+</div>
+
+## Setting up DUO 2FA
 
 All alliance supercomputers require 2-factor authentification using the DUO app. Follow [these steps](https://docs.alliancecan.ca/wiki/Multifactor_authentication#Registering_factors) to set it up.
 
@@ -91,7 +97,7 @@ Enter a passcode or select one of the following options:
 Passcode or option (1-1):
 ```
 
-Type 1, press return, and you will receive a notification to approve.
+Type 1, press return, and you will receive a notification to approve on your phone.
 
 Once you are logged in, you'll see something that looks like this:
 
@@ -118,15 +124,16 @@ ________________________________________________________________________________
  xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
 __________|_______________________________|_________|_________|_________________
 ```
+When you see `>`at the bottom, that means Mammouth is ready to receive commands.
 
 <div class="callout-danger">
-**You must** execute the following command, **EVERY TIME** you log in.
+**Next, you must** execute the following command, **EVERY TIME** you log in.
+</div>
 
 ```bash
 newgrp def-ilafores
 ```
-Otherwise, any file you create will only be readable and writable by you.Do not add the newgrp command to your bashrc, tempting as it may be.
-</div>
+Otherwise, any file you create will only be readable and writable by you. Do not add the newgrp command to your bashrc, tempting as it may be.
 
 ---
 
@@ -134,17 +141,22 @@ Otherwise, any file you create will only be readable and writable by you.Do not 
 
 Add a few lines to your `.bashrc` file, which is executed every time you login.
 <div class="callout-danger">
-You only need to do these once, forever!
+You only need to do this once, ever!
 </div>
 
 ```{bash bashrc}
 # Sets up certain permissions: 
 echo umask 007 >> ~/.bashrc
+
 # Allows access to certain programs (e.g. cutadapt):
 echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc 
 echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc			
-echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc  # Creates a $ILAFORES variable
-. ~/.bashrc # Executes the .bashrc (happens every time you log in, but we need those variables now!)
+
+# Create a $ILAFORES variable:
+echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
+
+# Execute the .bashrc (happens every time you log in, but we need those variables now!)
+. ~/.bashrc 
 ```
 
 <div class="callout-note">
@@ -156,12 +168,17 @@ This setup will allow others within your group (def-ilafores) to write/execute f
 In the following, replace `your_project_name` with the name you want your project directory to have, and `PROJECT1` by a short name you'll remember (it will create a variable pointing to your project directory path, which you can use in place of the path when using the command line).
 
 ```{bash project}
-echo "export PROJECT1=$ILAFORES/analysis/your_project_name" >> ~/.bashrc   # Makes sure the variable exists whenever you log in
-. ~/.bashrc                                                                 # execute the bashrc
-mkdir -p $PROJECT1                                                          # create your project directory
+# Makes sure the variable exists whenever you log in:
+echo "export PROJECT1=$ILAFORES/analysis/your_project_name" >> ~/.bashrc
+
+# execute the bashrc:
+. ~/.bashrc
+
+# create your project directory:
+mkdir -p $PROJECT1
 ```
 
-Again, these last two commands only need to be done once (per project). Then, whenever you log in to ip34, using the project directory variable name you've chosen (here PROJECT1), all you have to do is
+Then, whenever you log in to ip34, using the project directory variable name you've chosen (here PROJECT1), all you have to do is
 
 ```{bash daily}
 newgrp def-ilafores  # don't forget! ;-)
@@ -170,16 +187,25 @@ cd $PROJECT1
 
 And you can start doing science!
 
+<div class="callout-note">
+Check out [this cool tutorial](https://astrobiomike.github.io/unix/unix-intro) to learn how to get around a little more using this language (bash). Calcul Québec  also regularly give 3-hour workshops on command line (bash) programming for Linux. Check out [their offer](https://www.calculquebec.ca/services-aux-chercheurs/formation/catalogue/).
+</div>
 ---
 
-# Going further {.tabset}
+# What's next? {.tabset}
 
-## Loading the R environment
+If you are working with amplicon data, next steps would be to
 
-If you need extra juice to run a massive DADA2 pipeline your laptop can't handle, for example, you can load the R environment within ip34. First, on ip34, use shared R libraries from the Laforest group:
+1. Setup your R environment on ip34 (below)
+2. Follow [the DADA2 tutorial](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html)
+
+## Setting up the R environment
+
+In microbial ecology, when using R, many packages are often required. Packages are bundles of functions that make coding easier, developed by people like you and me around the world. Installing packages on ip34 can sometimes be a bit problematic, so we have a shared library you can copy into your environment and then build on top of it or update depending on your requirements. To copy it:
 
 ```{bash r-libs}
-echo export R_LIBS="/home/def-ilafores" >> ~/.bashrc
+mkdir -p ~/R/x86_64-pc-linux-gnu-library/4.4
+cp -r $ILAFORES/R_libs_20260401/* ~/R/x86_64-pc-linux-gnu-library/4.4
 ```
 
 Then, load R and activate it.
@@ -188,18 +214,18 @@ Then, load R and activate it.
 module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
 nice R
 ```
-
 <div class="callout-ip34">
-`nice` is optional, but recommended so your program is "nice to others" who use the same resources (so you don't hoard all the cores in ip34). Once you run this, you are now in the equivalent of an R console, which accepts R commands (don't write in bash!). The `>` at the beginning of a new line expects commands in the R language. You'll need to install the packages you need (only once), as you once did on your computer. By default, your current directory will be the one you were in when you activated R.
-</div>
-
-## Multithread support of ip34
-
 The cool thing about ip34 is that there are 96 cores available. So whenever the function you run has a `threads` or `cores` argument or something like that, you can choose how many to use.
 
-<div class="callout-warning">
 Keep in mind that you are not alone on ip34! It is generally frowned upon to huddle all the cores. Try to limit yourself to 24 for most purposes. If you need more, there are 1500 computing nodes that can be used, but this requires a little extra legwork in terms of scripting (but you're having fun so that shouldn't be an issue!).
 </div>
+
+<details>
+<summary>
+what's nice?
+</summary>
+`nice` is recommended so your program is "nice to others" who use the same resources (so you don't hoard all the cores in ip34). Once you run this, you are now in the equivalent of an R console, which accepts R commands (don't write in bash!). The `>` at the beginning of a new line expects commands in the R language. You'll need to install the packages you need (only once), as you once did on your computer. By default, your current directory will be the one you were in when you activated R.
+</details>
 
 ## Making stuff run in the background
 
@@ -226,5 +252,12 @@ And you'll see your code is still running.
 <div class="callout-note">
 To learn more about tmux (like how to see multiple sessions simultaneously), check out [this blog post](https://www.redhat.com/en/blog/introduction-tmux-linux).
 </div>
-
 # {-}
+
+
+#### Coming soon: 
+
+- metagenomic data processing pipelines
+- relative abundance matrix analyses
+
+

@@ -142,22 +142,37 @@ if (!dir.exists(path_summary)) dir.create(path_summary)
 **Directory numbering convention:** Directories are prefixed with integers (`0_raw`, `1_filtN`, `2_cutadapt`, `3_filtered`, `4_out`) to match the pipeline steps and keep them ordered in the file system. `X_DADA2_Summary` collects all diagnostic plots and reports.
 </div>
 
-## Input Files
+## Input Files {.tabset}
 
 DADA2 expects one pair of gzipped FASTQ files per sample, named consistently. 
 
-Here we assume the pattern `SampleName_R1.fastq.gz` / `SampleName_R2.fastq.gz`. If not, the `pattern =` parameter should be adjusted (or for example if your fastqs are not compressed, they will be missing the .gz ending). The `$` 
+Find files by matching R1/R2 pattern and restricting to files that *end* wiht `fastq.gz` (thus excluding .md5 files if you have them):
 
-```{r input}
-fnFs <- sort(list.files(path_raw, pattern = "\\.[^.]*_R1\\.fastq\\.gz$", full.names = TRUE))
-fnRs <- sort(list.files(path_raw, pattern = "_R2.fastq.gz$", full.names = TRUE))
+```{r}
+fnFs <- sort(list.files(path_raw, pattern = "_R1\\.fastq\\.gz$", full.names = TRUE))
+fnRs <- sort(list.files(path_raw, pattern = "_R2\\.fastq\\.gz$", full.names = TRUE))
+```
 
-# Extract sample names [adjust this depending on your filename patterns]:
+Then, extract sample names. This can be tricky because we want to remove the _R1.fastq.gz suffix, however, some platforms will also add a long string of characters at the beginning of files, unique to each sample. Here are two examples, but you might have to personalise your approach.
+
+### For simple filenames
+
+If your sample names are the prefix and you only want to remove the `_R1.fastq.gz` part, things are simple:
+
+```{r input_simple}
+sample.names <- gsub("_R[12]\\.fastq\\.gz$", "", basename(fnFs))
+```
+
+
+### For more complex filenames
+
+However, if your filenames look like `MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_16S_R1.fastq.gz`, it gets trickier. Here's how to solve this case where the actual filename is `2024-1-PMB-LI-LE-1_16S`. So we want to remove the `_R1.fastq.gz` suffix, but also (in this case) everything up to and including the last period *preceding* the sample name. Here's the formula, and below is a detailed explanation you should consult if this doesn't work for you:
+
+```{r input_complex}
 (sample.names <- gsub(
   pattern = ".*\\.([^.]+_*)_R[12]\\.fastq\\.gz", 
   replacement = "\\1", 
   x = basename(fnFs)))
-
 ```
 
 <details>
@@ -181,6 +196,8 @@ For a filename like `./0_raw/MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_1
 - The `replacement = "\\1"` argument says to replace whatever matched the pattern with only the capture group 1.
 
 </details>
+
+## {-}
 
 Write a simple tsv file with sample names for reference.
 

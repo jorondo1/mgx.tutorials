@@ -1591,10 +1591,18 @@ padding: 10px 16px;
 margin: 16px 0;
 border-radius: 3px;
 }
+div.callout-ip34 {
+background-color: #fff4e6; 
+border-left: 5px solid #992F08;
+color: #000000;
+padding: 0.75em 1em;
+margin: 1em 0;
+border-radius: 4px;
+}
 div.callout-ITS {
 background-color: #fff4e6; 
 border-left: 5px solid #992F08;
-color: #FFFFFF;
+color: #000000;
 padding: 0.75em 1em;
 margin: 1em 0;
 border-radius: 4px;
@@ -1849,26 +1857,27 @@ Alliance of Canada</a> account. Ask your director for their sponsorship
 code. For help, visit their <a href="https://docs.alliancecan.ca/wiki/Frequently_Asked_Questions_about_the_CCDB/fr">FAQ</a>.</p>
 <hr />
 </div>
-<div id="initial-setup-locally" class="section level1 tabset" number="2">
-<h1 class="tabset"><span class="header-section-number">2</span> Initial
-setup (locally)</h1>
+<div id="initial-setup-locally" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Initial setup
+(locally)</h1>
+<div class="callout-danger">
+<p>You only need to do this once, ever!</p>
+</div>
+<div id="local-configuration" class="section level2 tabset" number="2.1">
+<h2 class="tabset"><span class="header-section-number">2.1</span> Local
+configuration</h2>
 <p>This will periodically send a signal to ip34 to make sure you don’t
 spontaneously get logged out. <em>You only need to do this
 once.</em></p>
-<div id="on-a-mac" class="section level2" number="2.1">
-<h2><span class="header-section-number">2.1</span> On a Mac</h2>
+<div id="on-a-mac" class="section level3" number="2.1.1">
+<h3><span class="header-section-number">2.1.1</span> On a Mac</h3>
 <p>Open the Terminal app and run the following:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">touch</span> ~/.ssh/config</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Host *&quot;</span> <span class="op">&gt;&gt;</span> ~/.ssh/config</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="bu">echo</span> ServerAliveInterval 60 <span class="op">&gt;&gt;</span> ~/.ssh/config</span></code></pre></div>
-<div class="callout-note">
-<p>If you need a quick primer on the bash language syntax, which is the
-language the code blocks below are written in, checkout Mike Lee’s <a href="https://astrobiomike.github.io/unix/unix-intro">awesome
-tutorial</a>.</p>
 </div>
-</div>
-<div id="on-windows" class="section level2" number="2.2">
-<h2><span class="header-section-number">2.2</span> On Windows</h2>
+<div id="on-windows" class="section level3" number="2.1.2">
+<h3><span class="header-section-number">2.1.2</span> On Windows</h3>
 <ol style="list-style-type: decimal">
 <li>Navigate to the <code>.ssh</code> program in your home folder,
 typically under <code>C:\Users:\&lt;username&gt;\.ssh</code></li>
@@ -1882,11 +1891,17 @@ folder and select New &gt; Text Document</li>
 next steps.</p>
 </div>
 </div>
-<div id="section" class="section level1 unnumbered">
-<h1 class="unnumbered"></h1>
-<div id="setting-up-duo-2fa" class="section level3" number="2.2.1">
-<h3><span class="header-section-number">2.2.1</span> Setting up DUO
-2FA</h3>
+<div id="section" class="section level2 unnumbered">
+<h2 class="unnumbered"></h2>
+<div class="callout-note">
+<p>If you need a quick primer on the bash language syntax, which is the
+language the code blocks below are written in, checkout Mike Lee’s <a href="https://astrobiomike.github.io/unix/unix-intro">awesome
+tutorial</a>.</p>
+</div>
+</div>
+<div id="setting-up-duo-2fa" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Setting up DUO
+2FA</h2>
 <p>All alliance supercomputers require 2-factor authentification using
 the DUO app. Follow <a href="https://docs.alliancecan.ca/wiki/Multifactor_authentication#Registering_factors">these
 steps</a> to set it up.</p>
@@ -1904,8 +1919,8 @@ password, that’s normal!). Here, use the username to your DRAC account
 <pre><code>Enter a passcode or select one of the following options:
 1. Duo Push to Pixel8 (Android)
 Passcode or option (1-1):</code></pre>
-<p>Type 1, press return, and you will receive a notification to
-approve.</p>
+<p>Type 1, press return, and you will receive a notification to approve
+on your phone.</p>
 <p>Once you are logged in, you’ll see something that looks like
 this:</p>
 <pre><code>################################################################################
@@ -1929,14 +1944,16 @@ ________________________________________________________________________________
  large    | 251 GB memory, 48 cores/node  |     20  |  251G   |   48
  xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
 __________|_______________________________|_________|_________|_________________</code></pre>
+<p>When you see <code>&gt;</code>at the bottom, that means Mammouth is
+ready to receive commands.</p>
 <div class="callout-danger">
-<p><strong>You must</strong> execute the following command,
+<p><strong>Next, you must</strong> execute the following command,
 <strong>EVERY TIME</strong> you log in.</p>
+</div>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
-you.Do not add the newgrp command to your bashrc, tempting as it may
+you. Do not add the newgrp command to your bashrc, tempting as it may
 be.</p>
-</div>
 <hr />
 </div>
 <div id="initial-setup-ip34" class="section level1" number="4">
@@ -1945,15 +1962,20 @@ be.</p>
 Add a few lines to your <code>.bashrc</code> file, which is executed
 every time you login.
 <div class="callout-danger">
-<p>You only need to do these once, forever!</p>
+<p>You only need to do this once, ever!</p>
 </div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Sets up certain permissions: </span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc  <span class="co"># Creates a $ILAFORES variable</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc <span class="co"># Executes the .bashrc (happens every time you log in, but we need those variables now!)</span></span></code></pre></div>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
@@ -1973,58 +1995,78 @@ name you want your project directory to have, and <code>PROJECT1</code>
 by a short name you’ll remember (it will create a variable pointing to
 your project directory path, which you can use in place of the path when
 using the command line).</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;export PROJECT1=</span><span class="va">$ILAFORES</span><span class="st">/analysis/your_project_name&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc   <span class="co"># Makes sure the variable exists whenever you log in</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc                                                                 <span class="co"># execute the bashrc</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$PROJECT1</span>                                                          <span class="co"># create your project directory</span></span></code></pre></div>
-<p>Again, these last two commands only need to be done once (per
-project). Then, whenever you log in to ip34, using the project directory
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Makes sure the variable exists whenever you log in:</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;export PROJECT1=</span><span class="va">$ILAFORES</span><span class="st">/analysis/your_project_name&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># execute the bashrc:</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># create your project directory:</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$PROJECT1</span></span></code></pre></div>
+<p>Then, whenever you log in to ip34, using the project directory
 variable name you’ve chosen (here PROJECT1), all you have to do is</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores  <span class="co"># don&#39;t forget! ;-)</span></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$PROJECT1</span></span></code></pre></div>
 <p>And you can start doing science!</p>
+<div class="callout-note">
+<p>Check out <a href="https://astrobiomike.github.io/unix/unix-intro">this cool
+tutorial</a> to learn how to get around a little more using this
+language (bash). Calcul Québec also regularly give 3-hour workshops on
+command line (bash) programming for Linux. Check out <a href="https://www.calculquebec.ca/services-aux-chercheurs/formation/catalogue/">their
+offer</a>.</p>
+</div>
 <hr />
 </div>
-<div id="going-further" class="section level1 tabset" number="5">
-<h1 class="tabset"><span class="header-section-number">5</span> Going
-further</h1>
-<div id="loading-the-r-environment" class="section level2" number="5.1">
-<h2><span class="header-section-number">5.1</span> Loading the R
+<div id="whats-next" class="section level1 tabset" number="5">
+<h1 class="tabset"><span class="header-section-number">5</span> What’s
+next?</h1>
+<p>If you are working with amplicon data, next steps would be to</p>
+<ol style="list-style-type: decimal">
+<li>Setup your R environment on ip34 (below)</li>
+<li>Follow <a href="https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html">the
+DADA2 tutorial</a></li>
+</ol>
+<div id="setting-up-the-r-environment" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> Setting up the R
 environment</h2>
-<p>If you need extra juice to run a massive DADA2 pipeline your laptop
-can’t handle, for example, you can load the R environment within ip34.
-First, on ip34, use shared R libraries from the Laforest group:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="bu">echo</span> export R_LIBS=<span class="st">&quot;/home/def-ilafores&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span></code></pre></div>
+<p>In microbial ecology, when using R, many packages are often required.
+Packages are bundles of functions that make coding easier, developed by
+people like you and me around the world. Installing packages on ip34 can
+sometimes be a bit problematic, so we have a shared library you can copy
+into your environment and then build on top of it or update depending on
+your requirements. To copy it:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> <span class="va">$ILAFORES</span>/R_libs_20260401/<span class="pp">*</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span></code></pre></div>
 <p>Then, load R and activate it.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">module</span> load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10</span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">nice</span> R</span></code></pre></div>
 <div class="callout-ip34">
-<p><code>nice</code> is optional, but recommended so your program is
-“nice to others” who use the same resources (so you don’t hoard all the
-cores in ip34). Once you run this, you are now in the equivalent of an R
-console, which accepts R commands (don’t write in bash!). The
-<code>&gt;</code> at the beginning of a new line expects commands in the
-R language. You’ll need to install the packages you need (only once), as
-you once did on your computer. By default, your current directory will
-be the one you were in when you activated R.</p>
-</div>
-</div>
-<div id="multithread-support-of-ip34" class="section level2" number="5.2">
-<h2><span class="header-section-number">5.2</span> Multithread support
-of ip34</h2>
 <p>The cool thing about ip34 is that there are 96 cores available. So
 whenever the function you run has a <code>threads</code> or
 <code>cores</code> argument or something like that, you can choose how
 many to use.</p>
-<div class="callout-warning">
 <p>Keep in mind that you are not alone on ip34! It is generally frowned
 upon to huddle all the cores. Try to limit yourself to 24 for most
 purposes. If you need more, there are 1500 computing nodes that can be
 used, but this requires a little extra legwork in terms of scripting
 (but you’re having fun so that shouldn’t be an issue!).</p>
 </div>
+<details>
+<summary>
+what’s nice?
+</summary>
+<code>nice</code> is recommended so your program is “nice to others” who
+use the same resources (so you don’t hoard all the cores in ip34). Once
+you run this, you are now in the equivalent of an R console, which
+accepts R commands (don’t write in bash!). The <code>&gt;</code> at the
+beginning of a new line expects commands in the R language. You’ll need
+to install the packages you need (only once), as you once did on your
+computer. By default, your current directory will be the one you were in
+when you activated R.
+</details>
 </div>
-<div id="making-stuff-run-in-the-background" class="section level2" number="5.3">
-<h2><span class="header-section-number">5.3</span> Making stuff run in
+<div id="making-stuff-run-in-the-background" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Making stuff run in
 the background</h2>
 <p>Imagine you want to run DADA2’s sample inference on hundreds of
 samples… that might take a while! If you want to go home and let it run
@@ -2059,6 +2101,13 @@ post</a>.</p>
 </div>
 <div id="section-1" class="section level1 unnumbered">
 <h1 class="unnumbered"></h1>
+<div id="coming-soon" class="section level4" number="5.2.0.1">
+<h4><span class="header-section-number">5.2.0.1</span> Coming soon:</h4>
+<ul>
+<li>metagenomic data processing pipelines</li>
+<li>relative abundance matrix analyses</li>
+</ul>
+</div>
 </div>
 
 

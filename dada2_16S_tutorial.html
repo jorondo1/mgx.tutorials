@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jonathan Rondeau-Leclaire" />
 
-<meta name="date" content="2026-03-30" />
+<meta name="date" content="2026-04-01" />
 
 <title>DADA2 - 16S rRNA Processing Tutorial</title>
 
@@ -1591,10 +1591,18 @@ padding: 10px 16px;
 margin: 16px 0;
 border-radius: 3px;
 }
+div.callout-ip34 {
+background-color: #fff4e6; 
+border-left: 5px solid #992F08;
+color: #000000;
+padding: 0.75em 1em;
+margin: 1em 0;
+border-radius: 4px;
+}
 div.callout-ITS {
 background-color: #fff4e6; 
 border-left: 5px solid #992F08;
-color: #FFFFFF;
+color: #000000;
 padding: 0.75em 1em;
 margin: 1em 0;
 border-radius: 4px;
@@ -1824,7 +1832,7 @@ font-size: 0.95em;
 
 <h1 class="title toc-ignore">DADA2 - 16S rRNA Processing Tutorial</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire</h4>
-<h4 class="date">2026-03-30</h4>
+<h4 class="date">2026-04-01</h4>
 
 </div>
 
@@ -1954,22 +1962,43 @@ match the pipeline steps and keep them ordered in the file system.
 reports.</p>
 </div>
 </div>
-<div id="input-files" class="section level2" number="2.3">
-<h2><span class="header-section-number">2.3</span> Input Files</h2>
+<div id="input-files" class="section level2 tabset" number="2.3">
+<h2 class="tabset"><span class="header-section-number">2.3</span> Input
+Files</h2>
 <p>DADA2 expects one pair of gzipped FASTQ files per sample, named
 consistently.</p>
-<p>Here we assume the pattern <code>SampleName_R1.fastq.gz</code> /
-<code>SampleName_R2.fastq.gz</code>. If not, the <code>pattern =</code>
-parameter should be adjusted (or for example if your fastqs are not
-compressed, they will be missing the .gz ending). The <code>$</code></p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fnFs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.[^.]*_R1</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>fnRs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;_R2.fastq.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># Extract sample names [adjust this depending on your filename patterns]:</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>(sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">&quot;.*</span><span class="sc">\\</span><span class="st">.([^.]+_*)_R[12]</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz&quot;</span>, </span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">replacement =</span> <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1&quot;</span>, </span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">basename</span>(fnFs)))</span></code></pre></div>
+<p>Find files by matching R1/R2 pattern and restricting to files that
+<em>end</em> wiht <code>fastq.gz</code> (thus excluding .md5 files if
+you have them):</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fnFs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;_R1</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>fnRs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_raw, <span class="at">pattern =</span> <span class="st">&quot;_R2</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
+<p>Then, extract sample names. This can be tricky because we want to
+remove the _R1.fastq.gz suffix, however, some platforms will also add a
+long string of characters at the beginning of files, unique to each
+sample. Here are two examples, but you might have to personalise your
+approach.</p>
+<div id="for-simple-filenames" class="section level3" number="2.3.1">
+<h3><span class="header-section-number">2.3.1</span> For simple
+filenames</h3>
+<p>If your sample names are the prefix and you only want to remove the
+<code>_R1.fastq.gz</code> part, things are simple:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;_R[12]</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz$&quot;</span>, <span class="st">&quot;&quot;</span>, <span class="fu">basename</span>(fnFs))</span></code></pre></div>
+</div>
+<div id="for-more-complex-filenames" class="section level3" number="2.3.2">
+<h3><span class="header-section-number">2.3.2</span> For more complex
+filenames</h3>
+<p>However, if your filenames look like
+<code>MI.M06271_0139.001.N729---N508.2024-1-PMB-LI-LE-1_16S_R1.fastq.gz</code>,
+it gets trickier. Here’s how to solve this case where the actual
+filename is <code>2024-1-PMB-LI-LE-1_16S</code>. So we want to remove
+the <code>_R1.fastq.gz</code> suffix, but also (in this case) everything
+up to and including the last period <em>preceding</em> the sample name.
+Here’s the formula, and below is a detailed explanation you should
+consult if this doesn’t work for you:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>(sample.names <span class="ot">&lt;-</span> <span class="fu">gsub</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">pattern =</span> <span class="st">&quot;.*</span><span class="sc">\\</span><span class="st">.([^.]+_*)_R[12]</span><span class="sc">\\</span><span class="st">.fastq</span><span class="sc">\\</span><span class="st">.gz&quot;</span>, </span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">replacement =</span> <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1&quot;</span>, </span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">basename</span>(fnFs)))</span></code></pre></div>
 <details>
 <summary>
 What does the <code>gsub()</code> pattern do and how do I adjust it to
@@ -2005,8 +2034,12 @@ to keep.</p></li>
 whatever matched the pattern with only the capture group 1.</p></li>
 </ul>
 </details>
+</div>
+</div>
+<div id="section" class="section level2 unnumbered">
+<h2 class="unnumbered"></h2>
 <p>Write a simple tsv file with sample names for reference.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">write_delim</span>(<span class="fu">data.frame</span>(sample.names), <span class="fu">file.path</span>(path_summary, <span class="st">&#39;sample_names.tsv&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">write_delim</span>(<span class="fu">data.frame</span>(sample.names), <span class="fu">file.path</span>(path_summary, <span class="st">&#39;sample_names.tsv&#39;</span>))</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -2015,22 +2048,22 @@ whatever matched the pattern with only the capture group 1.</p></li>
 <p>Before primer removal, we remove reads containing ambiguous bases
 (Ns) and low-complexity reads. This is a lightweight pre-filter; it does
 <strong>not</strong> apply quality thresholds.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>fnFs.filtN <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;1_filtN&quot;</span>, <span class="fu">basename</span>(fnFs))</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>fnRs.filtN <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;1_filtN&quot;</span>, <span class="fu">basename</span>(fnRs))</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>out.N <span class="ot">&lt;-</span> <span class="fu">filterAndTrim</span>(</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>  fnFs, fnFs.filtN,</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>  fnRs, fnRs.filtN,</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  <span class="at">maxN =</span> <span class="dv">0</span>,         <span class="co"># reject any read containing an N</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  <span class="at">rm.lowcomplex =</span> <span class="cn">TRUE</span>,    <span class="co"># remove low-complexity reads (see note below)</span></span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="at">multithread =</span> ncores</span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>)</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a></span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="fu">names</span>(fnFs.filtN) <span class="ot">&lt;-</span> sample.names</span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="fu">names</span>(fnRs.filtN) <span class="ot">&lt;-</span> sample.names</span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="fu">rownames</span>(out.N) <span class="ot">&lt;-</span> sample.names</span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a></span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="fu">head</span>(out.N)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>fnFs.filtN <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;1_filtN&quot;</span>, <span class="fu">basename</span>(fnFs))</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>fnRs.filtN <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;1_filtN&quot;</span>, <span class="fu">basename</span>(fnRs))</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>out.N <span class="ot">&lt;-</span> <span class="fu">filterAndTrim</span>(</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  fnFs, fnFs.filtN,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  fnRs, fnRs.filtN,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">maxN =</span> <span class="dv">0</span>,         <span class="co"># reject any read containing an N</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="at">rm.lowcomplex =</span> <span class="cn">TRUE</span>,    <span class="co"># remove low-complexity reads (see note below)</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  <span class="at">multithread =</span> ncores</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>)</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="fu">names</span>(fnFs.filtN) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">names</span>(fnRs.filtN) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="fu">rownames</span>(out.N) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="fu">head</span>(out.N)</span></code></pre></div>
 <div class="callout-note">
 <p><strong><code>rm.lowcomplex = TRUE</code>:</strong> Low-complexity
 reads (e.g. long homopolymer stretches) can cause issues downstream.
@@ -2051,7 +2084,7 @@ We use <a href="https://cutadapt.readthedocs.io/">Cutadapt</a>.</p>
 occurrence</h2>
 <p>This step checks how often each primer (in all four orientations)
 appears in the raw reads.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">primer_occurence</span>(fnFs.filtN, fnRs.filtN, FWD, REV, <span class="at">ncores =</span> ncores)</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">primer_occurence</span>(fnFs.filtN, fnRs.filtN, FWD, REV, <span class="at">ncores =</span> ncores)</span></code></pre></div>
 <p>You should see the forward primer predominantly in R1
 (<code>FWD.ForwardReads</code>) and the reverse primer predominantly in
 R2 (<code>REV.ReverseReads</code>). Significant presence of
@@ -2060,19 +2093,19 @@ where read-through occurs.</p>
 </div>
 <div id="run-cutadapt" class="section level2" number="4.2">
 <h2><span class="header-section-number">4.2</span> Run Cutadapt</h2>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>fnFs.cut <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_cut, <span class="fu">basename</span>(fnFs))</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>fnRs.cut <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_cut, <span class="fu">basename</span>(fnRs))</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">mclapply</span>(</span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="fu">seq_along</span>(fnFs),</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  mgx.tools<span class="sc">::</span>run_cutadapt,</span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">cutadapt_path =</span> path_cutadapt,</span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="co"># Remove FWD primer and reverse-complement of REV from R1</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  <span class="at">R1.flags =</span> <span class="fu">paste</span>(<span class="st">&quot;-g&quot;</span>, FWD, <span class="st">&quot;-a&quot;</span>, dada2<span class="sc">:::</span><span class="fu">rc</span>(REV)),</span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>  <span class="co"># Remove REV primer and reverse-complement of FWD from R2</span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>  <span class="at">R2.flags =</span> <span class="fu">paste</span>(<span class="st">&quot;-G&quot;</span>, REV, <span class="st">&quot;-A&quot;</span>, dada2<span class="sc">:::</span><span class="fu">rc</span>(FWD)),</span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>  <span class="at">mc.cores =</span> ncores</span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>fnFs.cut <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_cut, <span class="fu">basename</span>(fnFs))</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>fnRs.cut <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_cut, <span class="fu">basename</span>(fnRs))</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="fu">mclapply</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="fu">seq_along</span>(fnFs),</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  mgx.tools<span class="sc">::</span>run_cutadapt,</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>  <span class="at">cutadapt_path =</span> path_cutadapt,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>  <span class="co"># Remove FWD primer and reverse-complement of REV from R1</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  <span class="at">R1.flags =</span> <span class="fu">paste</span>(<span class="st">&quot;-g&quot;</span>, FWD, <span class="st">&quot;-a&quot;</span>, dada2<span class="sc">:::</span><span class="fu">rc</span>(REV)),</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  <span class="co"># Remove REV primer and reverse-complement of FWD from R2</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>  <span class="at">R2.flags =</span> <span class="fu">paste</span>(<span class="st">&quot;-G&quot;</span>, REV, <span class="st">&quot;-A&quot;</span>, dada2<span class="sc">:::</span><span class="fu">rc</span>(FWD)),</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>  <span class="at">mc.cores =</span> ncores</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>)</span></code></pre></div>
 <details>
 <summary>
 Learn what happened here.
@@ -2104,12 +2137,12 @@ reads that are too short to be biological after trimming — see <a href="https:
 <div id="verify-primer-removal" class="section level2" number="4.3">
 <h2><span class="header-section-number">4.3</span> Verify primer
 removal</h2>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">primer_occurence</span>(fnFs.cut, fnRs.cut, FWD, REV, <span class="at">ncores =</span> ncores)</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">primer_occurence</span>(fnFs.cut, fnRs.cut, FWD, REV, <span class="at">ncores =</span> ncores)</span></code></pre></div>
 <p>All primer counts should be zero (or very close to zero). If not,
 check your primer sequences and orientations before continuing.</p>
 <p>Generate a list of primer-trimmed files:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>cutFs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_cut, <span class="at">pattern =</span> <span class="st">&quot;_R1.fastq.gz&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>cutRs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_cut, <span class="at">pattern =</span> <span class="st">&quot;_R2.fastq.gz&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>cutFs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_cut, <span class="at">pattern =</span> <span class="st">&quot;_R1.fastq.gz&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>cutRs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">list.files</span>(path_cut, <span class="at">pattern =</span> <span class="st">&quot;_R2.fastq.gz&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -2125,30 +2158,30 @@ reads</h2>
 truncation parameters. These plots show per-position quality scores
 across randomly selected samples and across all samples
 (aggregated).</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>plot_list <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">gen_qplots</span>(<span class="at">Fs =</span> cutFs, <span class="at">Rs =</span> cutRs, <span class="at">nsam =</span> <span class="dv">4</span>)</span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">save_qplots</span>(<span class="at">plot_list =</span> plot_list,</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>            <span class="at">out_dir =</span> path_summary,</span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>            <span class="at">step_id =</span> <span class="st">&#39;raw&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>plot_list <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">gen_qplots</span>(<span class="at">Fs =</span> cutFs, <span class="at">Rs =</span> cutRs, <span class="at">nsam =</span> <span class="dv">4</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">save_qplots</span>(<span class="at">plot_list =</span> plot_list,</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>            <span class="at">out_dir =</span> path_summary,</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>            <span class="at">step_id =</span> <span class="st">&#39;raw&#39;</span>)</span></code></pre></div>
 </div>
 <div id="filterAndTrim" class="section level2" number="5.2">
 <h2><span class="header-section-number">5.2</span> Filter and trim</h2>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>filtFs <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;3_filtered&quot;</span>, <span class="fu">basename</span>(cutFs))</span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>filtRs <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;3_filtered&quot;</span>, <span class="fu">basename</span>(cutRs))</span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="fu">names</span>(filtFs) <span class="ot">&lt;-</span> sample.names</span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="fu">names</span>(filtRs) <span class="ot">&lt;-</span> sample.names</span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">filterAndTrim</span>(</span>
-<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>  cutFs, filtFs, cutRs, filtRs,</span>
-<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>  <span class="at">maxEE =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>), </span>
-<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>  <span class="at">truncLen =</span> <span class="fu">c</span>(<span class="dv">190</span>, <span class="dv">140</span>),</span>
-<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>  <span class="at">minLen =</span> <span class="dv">50</span>, </span>
-<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>  <span class="at">rm.phix =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a>  <span class="at">compress =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a>  <span class="at">multithread =</span> ncores</span>
-<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>)</span>
-<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a></span>
-<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> sample.names</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>filtFs <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;3_filtered&quot;</span>, <span class="fu">basename</span>(cutFs))</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>filtRs <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&quot;3_filtered&quot;</span>, <span class="fu">basename</span>(cutRs))</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="fu">names</span>(filtFs) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">names</span>(filtRs) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">filterAndTrim</span>(</span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>  cutFs, filtFs, cutRs, filtRs,</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>  <span class="at">maxEE =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>), </span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a>  <span class="at">truncLen =</span> <span class="fu">c</span>(<span class="dv">190</span>, <span class="dv">140</span>),</span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a>  <span class="at">minLen =</span> <span class="dv">50</span>, </span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a>  <span class="at">rm.phix =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a>  <span class="at">compress =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a>  <span class="at">multithread =</span> ncores</span>
+<span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a>)</span>
+<span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a><span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> sample.names</span></code></pre></div>
 <div class="callout-note">
 <p><strong><code>truncLen</code>:</strong> This is the most
 dataset-specific parameter in the pipeline. Quality typically degrades
@@ -2183,16 +2216,16 @@ tutorial</a>.</p>
 <div id="quality-profiles-clean-reads" class="section level2" number="5.3">
 <h2><span class="header-section-number">5.3</span> Quality profiles:
 clean reads</h2>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>plot_list <span class="ot">&lt;-</span> <span class="fu">gen_qplots</span>(<span class="at">Fs =</span> filtFs, <span class="at">Rs =</span> filtRs, <span class="at">nsam =</span> <span class="dv">4</span>)</span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">save_qplots</span>(<span class="at">plot_list =</span> plot_list,</span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>            <span class="at">out_dir =</span> path_summary,</span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>            <span class="at">step_id =</span> <span class="st">&#39;clean&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>plot_list <span class="ot">&lt;-</span> <span class="fu">gen_qplots</span>(<span class="at">Fs =</span> filtFs, <span class="at">Rs =</span> filtRs, <span class="at">nsam =</span> <span class="dv">4</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="fu">save_qplots</span>(<span class="at">plot_list =</span> plot_list,</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>            <span class="at">out_dir =</span> path_summary,</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>            <span class="at">step_id =</span> <span class="st">&#39;clean&#39;</span>)</span></code></pre></div>
 <p><strong>Handle dropped samples:</strong></p>
 <p>Low-input samples (e.g. negative controls, failed extractions) may
 turn up empty after this step, whereby no fastq file will be written.
 DADA2 will error if it tries to process a non-existent file.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>filtFs_survived <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">dropped_samples</span>(filtFs)</span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>filtRs_survived <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">dropped_samples</span>(filtRs)</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>filtFs_survived <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">dropped_samples</span>(filtFs)</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>filtRs_survived <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">dropped_samples</span>(filtRs)</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -2206,15 +2239,15 @@ distinguish true biological sequences from sequencing errors.</p>
 <div id="learn-error-rates" class="section level2" number="6.1">
 <h2><span class="header-section-number">6.1</span> Learn error
 rates</h2>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>errF <span class="ot">&lt;-</span> <span class="fu">learnErrors</span>(filtFs_survived, <span class="at">multithread =</span> ncores)</span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>errR <span class="ot">&lt;-</span> <span class="fu">learnErrors</span>(filtRs_survived, <span class="at">multithread =</span> ncores)</span>
-<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="co"># Visualise the fitted error model — this is an important QC step</span></span>
-<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>err_plot <span class="ot">&lt;-</span> <span class="fu">plotErrors</span>(errF, <span class="at">nominalQ =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a></span>
-<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;error_plot.pdf&quot;</span>),</span>
-<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>       <span class="at">plot =</span> err_plot, <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
-<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">2000</span>, <span class="at">height =</span> <span class="dv">2000</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>errF <span class="ot">&lt;-</span> <span class="fu">learnErrors</span>(filtFs_survived, <span class="at">multithread =</span> ncores)</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>errR <span class="ot">&lt;-</span> <span class="fu">learnErrors</span>(filtRs_survived, <span class="at">multithread =</span> ncores)</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co"># Visualise the fitted error model — this is an important QC step</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>err_plot <span class="ot">&lt;-</span> <span class="fu">plotErrors</span>(errF, <span class="at">nominalQ =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;error_plot.pdf&quot;</span>),</span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>       <span class="at">plot =</span> err_plot, <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">2000</span>, <span class="at">height =</span> <span class="dv">2000</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
 <details>
 <summary>
 Interpreting error plots
@@ -2235,8 +2268,8 @@ If you need reassurance, look at <a href="https://github.com/benjjneb/dada2/issu
 <h2><span class="header-section-number">6.2</span> Denoising</h2>
 <p>DADA2 uses the error model to partition reads into true sequence
 variants and noise.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>dadaFs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtFs_survived, <span class="at">err =</span> errF, <span class="at">pool =</span> <span class="st">&#39;pseudo&#39;</span>, <span class="at">multithread =</span> ncores)</span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>dadaRs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtRs_survived, <span class="at">err =</span> errR, <span class="at">pool =</span> <span class="st">&#39;pseudo&#39;</span>, <span class="at">multithread =</span> ncores)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>dadaFs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtFs_survived, <span class="at">err =</span> errF, <span class="at">pool =</span> <span class="st">&#39;pseudo&#39;</span>, <span class="at">multithread =</span> ncores)</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>dadaRs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtRs_survived, <span class="at">err =</span> errR, <span class="at">pool =</span> <span class="st">&#39;pseudo&#39;</span>, <span class="at">multithread =</span> ncores)</span></code></pre></div>
 <details>
 <summary>
 What is pseudo-pooling?
@@ -2260,12 +2293,12 @@ reads</h2>
 <p>Forward and reverse reads are merged at their overlapping region.
 Merging fails (reads are discarded) if the overlapping bases do not
 match sufficiently.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>mergers_pooled <span class="ot">&lt;-</span> <span class="fu">mergePairs</span>(</span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>  dadaFs, filtFs_survived,</span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>  dadaRs, filtRs_survived,</span>
-<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>  <span class="at">minOverlap =</span> <span class="dv">12</span>, <span class="co"># minimum overlap in bp; increase if you have long amplicons</span></span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>  <span class="at">maxMismatch =</span> <span class="dv">0</span> <span class="co"># the default; ASV with overlap mismatchs will be discarded</span></span>
-<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>mergers_pooled <span class="ot">&lt;-</span> <span class="fu">mergePairs</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>  dadaFs, filtFs_survived,</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>  dadaRs, filtRs_survived,</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>  <span class="at">minOverlap =</span> <span class="dv">12</span>, <span class="co"># minimum overlap in bp; increase if you have long amplicons</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a>  <span class="at">maxMismatch =</span> <span class="dv">0</span> <span class="co"># the default; ASV with overlap mismatchs will be discarded</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>)</span></code></pre></div>
 <p>Keep in mind that the longer the overlap, the higher the
 probabilities of a mismatch; even though errors were theoretically
 corrected, denoising is an imperfect process. Lack of overlap will
@@ -2274,7 +2307,7 @@ might too. If lots of reads are lost here (see <a href="#tracking">Read
 tracking</a> section below), you should revisit the filterAndTrim
 parameters (<a href="#filterAndTrim">see above</a>)</p>
 <p>We convert this into a sequence table:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>seqtab <span class="ot">&lt;-</span> <span class="fu">makeSequenceTable</span>(mergers_pooled)</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>seqtab <span class="ot">&lt;-</span> <span class="fu">makeSequenceTable</span>(mergers_pooled)</span></code></pre></div>
 </div>
 <div id="filter-by-expected-amplicon-length" class="section level2" number="7.2">
 <h2><span class="header-section-number">7.2</span> Filter by expected
@@ -2283,11 +2316,11 @@ amplicon length</h2>
 high frequency within the expected amplicon length. Sequences outside
 this range are likely artefacts (non-specific amplification, chimeras
 not yet removed). Adjust the range to match your amplicon.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab)))</span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab)))</span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>]</span></code></pre></div>
 <p>For variable-length amplicons, you can skip this step by running</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab</span></code></pre></div>
 <p>or simply increase the range to plausible values.</p>
 </div>
 <div id="remove-chimeras" class="section level2" number="7.3">
@@ -2296,16 +2329,16 @@ not yet removed). Adjust the range to match your amplicon.</p>
 of two different template molecules. They are identified and removed
 based on whether a sequence can be reconstructed as a bimera of two more
 abundant sequences.</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a>seqtab.nochim <span class="ot">&lt;-</span> <span class="fu">removeBimeraDenovo</span>(</span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>  seqtab2, <span class="at">method =</span> <span class="st">&quot;consensus&quot;</span>, <span class="at">multithread =</span> ncores, <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>)</span>
-<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="co"># Report chimera statistics</span></span>
-<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="fu">sink</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&quot;chimera_report.txt&quot;</span>), <span class="at">append =</span> <span class="cn">FALSE</span>, <span class="at">split =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">chimera_report</span>(seqtab, seqtab.nochim)</span>
-<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="fu">sink</span>() <span class="co"># sink writes a report while displaying it on the console</span></span>
-<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a></span>
-<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab.nochim)))  <span class="co"># length distribution after chimera removal</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a>seqtab.nochim <span class="ot">&lt;-</span> <span class="fu">removeBimeraDenovo</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>  seqtab2, <span class="at">method =</span> <span class="st">&quot;consensus&quot;</span>, <span class="at">multithread =</span> ncores, <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>)</span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="co"># Report chimera statistics</span></span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="fu">sink</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&quot;chimera_report.txt&quot;</span>), <span class="at">append =</span> <span class="cn">FALSE</span>, <span class="at">split =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">chimera_report</span>(seqtab, seqtab.nochim)</span>
+<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="fu">sink</span>() <span class="co"># sink writes a report while displaying it on the console</span></span>
+<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab.nochim)))  <span class="co"># length distribution after chimera removal</span></span></code></pre></div>
 <div class="callout-note">
 <p><strong>Expected chimera rates:</strong> In a typical 16S run, 5–25%
 of ASVs may be chimeric, but they usually represent a small fraction of
@@ -2323,11 +2356,11 @@ the computational cost of taxonomic assignment. This is a conservative
 pre-filter; more thorough rarefaction-based filtering is typically
 applied during the downstream analysis. This parameter is somewhat
 arbitrary, have fun.</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Drop ASVs with fewer than 2 total reads across all samples:</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>seqtab.filt <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">drop_rare_asvs</span>(seqtab.nochim, <span class="at">at_least_n =</span> <span class="dv">2</span>)</span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="fu">dim</span>(seqtab.filt)</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Drop ASVs with fewer than 2 total reads across all samples:</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>seqtab.filt <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">drop_rare_asvs</span>(seqtab.nochim, <span class="at">at_least_n =</span> <span class="dv">2</span>)</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="fu">dim</span>(seqtab.filt)</span></code></pre></div>
 <p><strong>Save the resulting sequence table!</strong></p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">write_rds</span>(seqtab.filt, <span class="fu">file.path</span>(path_out, <span class="st">&#39;seqtab.RDS&#39;</span>), <span class="at">compress =</span> <span class="st">&#39;gz&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">write_rds</span>(seqtab.filt, <span class="fu">file.path</span>(path_out, <span class="st">&#39;seqtab.RDS&#39;</span>), <span class="at">compress =</span> <span class="st">&#39;gz&#39;</span>)</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -2338,21 +2371,21 @@ tool. Large losses at a specific step point to specific problems. This
 will generate a two-panel plot with (1) the number of reads left at each
 steps for each sample, and (2) the proportion of reads lost between each
 step.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>track_change <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">track_dada</span>(</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  <span class="at">out.N =</span> out.N,</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="at">out =</span> out,</span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>  <span class="at">sample.names =</span> sample.names,</span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>  <span class="at">dadaFs =</span> dadaFs,</span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a>  <span class="at">mergers =</span> mergers_pooled,</span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>  <span class="at">seqtab.nochim =</span> seqtab.nochim</span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a>)</span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a></span>
-<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a><span class="fu">p_load</span>(patchwork)</span>
-<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a></span>
-<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">plot_track_change</span>(track_change) <span class="sc">%&gt;%</span></span>
-<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;track_changes.pdf&quot;</span>),</span>
-<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a>         <span class="at">plot =</span> ., <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a>         <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">2200</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>track_change <span class="ot">&lt;-</span> mgx.tools<span class="sc">::</span><span class="fu">track_dada</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>  <span class="at">out.N =</span> out.N,</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="at">out =</span> out,</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="at">sample.names =</span> sample.names,</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>  <span class="at">dadaFs =</span> dadaFs,</span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>  <span class="at">mergers =</span> mergers_pooled,</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>  <span class="at">seqtab.nochim =</span> seqtab.nochim</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>)</span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="fu">p_load</span>(patchwork)</span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a></span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">plot_track_change</span>(track_change) <span class="sc">%&gt;%</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;track_changes.pdf&quot;</span>),</span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a>         <span class="at">plot =</span> ., <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a>         <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">2200</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
 <p><strong>General guidelines</strong></p>
 <p>Don’t take these to the bank, but here’s a very approximate guideline
 of what might be a red flag:</p>
@@ -2461,15 +2494,15 @@ still consider using <code>DECIPHER::IdTaxa()</code>.</p>
 <p>With assignTaxonomy(), you can use ready-compiled classifiers <a href="https://zenodo.org/records/4587955">here</a>. Download the
 appropriate files (including species assignment if you want this, but
 don’t expect much with short reads 16S).</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a>silva_train  <span class="ot">&lt;-</span> <span class="st">&quot;path/to/silva_nr99_v138.1_train_set.fa.gz&quot;</span></span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a></span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="co"># Genus-level classification</span></span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">assignTaxonomy</span>(</span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a>  seqtab.filt, silva_train,</span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a>  <span class="at">tryRC =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a>  <span class="at">multithread =</span> ncores, <span class="co"># don&#39;t use more than 24</span></span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
-<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>silva_train  <span class="ot">&lt;-</span> <span class="st">&quot;path/to/silva_nr99_v138.1_train_set.fa.gz&quot;</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="co"># Genus-level classification</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">assignTaxonomy</span>(</span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>  seqtab.filt, silva_train,</span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a>  <span class="at">tryRC =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>  <span class="at">multithread =</span> ncores, <span class="co"># don&#39;t use more than 24</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <div id="decipher" class="section level2" number="9.2">
 <h2><span class="header-section-number">9.2</span> DECIPHER</h2>
@@ -2484,65 +2517,65 @@ Load this custom function
 <p>Adapted from <a href="https://benjjneb.github.io/dada2/tutorial.html" class="uri">https://benjjneb.github.io/dada2/tutorial.html</a> ; simply
 copy-paste this and execute it into your code. This function will
 eventually be added to the <code>mgx.tools</code> package.</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>format_DECIPHER_for_dada2 <span class="ot">&lt;-</span> <span class="cf">function</span>(ids, seqtab, <span class="at">ranks =</span> <span class="cn">NULL</span>) {</span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>  </span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="co"># If ranks not provided, extract them from the IdTaxa results</span></span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(ranks)) {</span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>    <span class="co"># Get all unique ranks from the classifications</span></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>    all_ranks <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">unlist</span>(<span class="fu">lapply</span>(ids, <span class="cf">function</span>(x) x<span class="sc">$</span>rank)))</span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>    <span class="co"># Remove &quot;Root&quot; and sort by typical hierarchy</span></span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>    ranks <span class="ot">&lt;-</span> all_ranks[all_ranks <span class="sc">!=</span> <span class="st">&quot;Root&quot;</span>]</span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&quot;Detected ranks: &quot;</span>, <span class="fu">paste</span>(ranks, <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>))</span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a>  }</span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a>  </span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a>  <span class="co"># Convert the output object of class &quot;Taxa&quot; to a matrix </span></span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a>  <span class="co"># analogous to the output from assignTaxonomy</span></span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a>  taxid <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(ids, <span class="cf">function</span>(x) {</span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">match</span>(ranks, x<span class="sc">$</span>rank)</span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a>    taxa <span class="ot">&lt;-</span> x<span class="sc">$</span>taxon[m]</span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a>    taxa[<span class="fu">startsWith</span>(taxa, <span class="st">&quot;unclassified_&quot;</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a>    taxa</span>
-<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a>  }))</span>
-<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a>  </span>
-<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a>  <span class="fu">colnames</span>(taxid) <span class="ot">&lt;-</span> ranks</span>
-<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a>  <span class="fu">rownames</span>(taxid) <span class="ot">&lt;-</span> <span class="fu">getSequences</span>(seqtab)</span>
-<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a>  </span>
-<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a>  perc_NA <span class="ot">&lt;-</span> <span class="fu">round</span>(</span>
-<span id="cb31-25"><a href="#cb31-25" tabindex="-1"></a>    <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(taxid)) <span class="sc">/</span> (<span class="fu">nrow</span>(taxid) <span class="sc">*</span> <span class="fu">ncol</span>(taxid)),</span>
-<span id="cb31-26"><a href="#cb31-26" tabindex="-1"></a>    <span class="dv">2</span>)</span>
-<span id="cb31-27"><a href="#cb31-27" tabindex="-1"></a>  </span>
-<span id="cb31-28"><a href="#cb31-28" tabindex="-1"></a>  <span class="fu">message</span>(<span class="fu">paste</span>(perc_NA, <span class="st">&#39;% of NAs&#39;</span>))</span>
-<span id="cb31-29"><a href="#cb31-29" tabindex="-1"></a>  </span>
-<span id="cb31-30"><a href="#cb31-30" tabindex="-1"></a>  <span class="fu">return</span>(taxid)</span>
-<span id="cb31-31"><a href="#cb31-31" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a>format_DECIPHER_for_dada2 <span class="ot">&lt;-</span> <span class="cf">function</span>(ids, seqtab, <span class="at">ranks =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>  </span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a>  <span class="co"># If ranks not provided, extract them from the IdTaxa results</span></span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(ranks)) {</span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a>    <span class="co"># Get all unique ranks from the classifications</span></span>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>    all_ranks <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">unlist</span>(<span class="fu">lapply</span>(ids, <span class="cf">function</span>(x) x<span class="sc">$</span>rank)))</span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>    <span class="co"># Remove &quot;Root&quot; and sort by typical hierarchy</span></span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>    ranks <span class="ot">&lt;-</span> all_ranks[all_ranks <span class="sc">!=</span> <span class="st">&quot;Root&quot;</span>]</span>
+<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">&quot;Detected ranks: &quot;</span>, <span class="fu">paste</span>(ranks, <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>))</span>
+<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a>  }</span>
+<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a>  </span>
+<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a>  <span class="co"># Convert the output object of class &quot;Taxa&quot; to a matrix </span></span>
+<span id="cb33-13"><a href="#cb33-13" tabindex="-1"></a>  <span class="co"># analogous to the output from assignTaxonomy</span></span>
+<span id="cb33-14"><a href="#cb33-14" tabindex="-1"></a>  taxid <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(ids, <span class="cf">function</span>(x) {</span>
+<span id="cb33-15"><a href="#cb33-15" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">match</span>(ranks, x<span class="sc">$</span>rank)</span>
+<span id="cb33-16"><a href="#cb33-16" tabindex="-1"></a>    taxa <span class="ot">&lt;-</span> x<span class="sc">$</span>taxon[m]</span>
+<span id="cb33-17"><a href="#cb33-17" tabindex="-1"></a>    taxa[<span class="fu">startsWith</span>(taxa, <span class="st">&quot;unclassified_&quot;</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb33-18"><a href="#cb33-18" tabindex="-1"></a>    taxa</span>
+<span id="cb33-19"><a href="#cb33-19" tabindex="-1"></a>  }))</span>
+<span id="cb33-20"><a href="#cb33-20" tabindex="-1"></a>  </span>
+<span id="cb33-21"><a href="#cb33-21" tabindex="-1"></a>  <span class="fu">colnames</span>(taxid) <span class="ot">&lt;-</span> ranks</span>
+<span id="cb33-22"><a href="#cb33-22" tabindex="-1"></a>  <span class="fu">rownames</span>(taxid) <span class="ot">&lt;-</span> <span class="fu">getSequences</span>(seqtab)</span>
+<span id="cb33-23"><a href="#cb33-23" tabindex="-1"></a>  </span>
+<span id="cb33-24"><a href="#cb33-24" tabindex="-1"></a>  perc_NA <span class="ot">&lt;-</span> <span class="fu">round</span>(</span>
+<span id="cb33-25"><a href="#cb33-25" tabindex="-1"></a>    <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(taxid)) <span class="sc">/</span> (<span class="fu">nrow</span>(taxid) <span class="sc">*</span> <span class="fu">ncol</span>(taxid)),</span>
+<span id="cb33-26"><a href="#cb33-26" tabindex="-1"></a>    <span class="dv">2</span>)</span>
+<span id="cb33-27"><a href="#cb33-27" tabindex="-1"></a>  </span>
+<span id="cb33-28"><a href="#cb33-28" tabindex="-1"></a>  <span class="fu">message</span>(<span class="fu">paste</span>(perc_NA, <span class="st">&#39;% of NAs&#39;</span>))</span>
+<span id="cb33-29"><a href="#cb33-29" tabindex="-1"></a>  </span>
+<span id="cb33-30"><a href="#cb33-30" tabindex="-1"></a>  <span class="fu">return</span>(taxid)</span>
+<span id="cb33-31"><a href="#cb33-31" tabindex="-1"></a>}</span></code></pre></div>
 </details>
-<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># Extract ASVs</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>dna <span class="ot">&lt;-</span> <span class="fu">DNAStringSet</span>(<span class="fu">getSequences</span>(seqtab.filt)) </span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="co"># Load the DECIPHER training set:</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>silva_train <span class="ot">&lt;-</span> <span class="st">&#39;data/ref_dbs/SILVA_SSU_r138_2_2024.RData&#39;</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="co"># Determine taxonomy</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a>ids <span class="ot">&lt;-</span> <span class="fu">IdTaxa</span>(</span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a>  <span class="at">test =</span> dna,</span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>  <span class="at">trainingSet =</span> silva_train,</span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a>  <span class="at">strand =</span> <span class="st">&quot;both&quot;</span>, </span>
-<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a>  <span class="at">processors =</span> ncores,</span>
-<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a>  <span class="at">verbose=</span><span class="cn">TRUE</span>) </span>
-<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a></span>
-<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a><span class="co"># Build dada2-formatted taxonomy table (see function above)</span></span>
-<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">format_DECIPHER_for_dada2</span>(</span>
-<span id="cb32-17"><a href="#cb32-17" tabindex="-1"></a>  ids, seqtab.filt,</span>
-<span id="cb32-18"><a href="#cb32-18" tabindex="-1"></a>  <span class="at">ranks =</span>  <span class="fu">c</span>(<span class="st">&#39;rootrank&#39;</span>, <span class="st">&#39;kingdom&#39;</span>, <span class="st">&#39;phylum&#39;</span>, <span class="st">&#39;class&#39;</span>, <span class="st">&#39;order&#39;</span>, <span class="st">&#39;family&#39;</span>, <span class="st">&#39;genus&#39;</span>)</span>
-<span id="cb32-19"><a href="#cb32-19" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Extract ASVs</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>dna <span class="ot">&lt;-</span> <span class="fu">DNAStringSet</span>(<span class="fu">getSequences</span>(seqtab.filt)) </span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="co"># Load the DECIPHER training set:</span></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>silva_train <span class="ot">&lt;-</span> <span class="st">&#39;data/ref_dbs/SILVA_SSU_r138_2_2024.RData&#39;</span></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="co"># Determine taxonomy</span></span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a>ids <span class="ot">&lt;-</span> <span class="fu">IdTaxa</span>(</span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a>  <span class="at">test =</span> dna,</span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a>  <span class="at">trainingSet =</span> silva_train,</span>
+<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a>  <span class="at">strand =</span> <span class="st">&quot;both&quot;</span>, </span>
+<span id="cb34-12"><a href="#cb34-12" tabindex="-1"></a>  <span class="at">processors =</span> ncores,</span>
+<span id="cb34-13"><a href="#cb34-13" tabindex="-1"></a>  <span class="at">verbose=</span><span class="cn">TRUE</span>) </span>
+<span id="cb34-14"><a href="#cb34-14" tabindex="-1"></a></span>
+<span id="cb34-15"><a href="#cb34-15" tabindex="-1"></a><span class="co"># Build dada2-formatted taxonomy table (see function above)</span></span>
+<span id="cb34-16"><a href="#cb34-16" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">format_DECIPHER_for_dada2</span>(</span>
+<span id="cb34-17"><a href="#cb34-17" tabindex="-1"></a>  ids, seqtab.filt,</span>
+<span id="cb34-18"><a href="#cb34-18" tabindex="-1"></a>  <span class="at">ranks =</span>  <span class="fu">c</span>(<span class="st">&#39;rootrank&#39;</span>, <span class="st">&#39;kingdom&#39;</span>, <span class="st">&#39;phylum&#39;</span>, <span class="st">&#39;class&#39;</span>, <span class="st">&#39;order&#39;</span>, <span class="st">&#39;family&#39;</span>, <span class="st">&#39;genus&#39;</span>)</span>
+<span id="cb34-19"><a href="#cb34-19" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 </div>
-<div id="section" class="section level1 unnumbered">
+<div id="section-1" class="section level1 unnumbered">
 <h1 class="unnumbered"></h1>
 <p>Grab a coffee, this can take a while! (up to several hours if you
 have thousands of ASVs and few cores to work with).</p>
 <p>Then, save the resulting taxonomy table!</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">write_rds</span>(taxonomy, <span class="fu">file.path</span>(path_out, <span class="st">&#39;taxonomy.RDS&#39;</span>), <span class="at">compress =</span> <span class="st">&#39;gz&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">write_rds</span>(taxonomy, <span class="fu">file.path</span>(path_out, <span class="st">&#39;taxonomy.RDS&#39;</span>), <span class="at">compress =</span> <span class="st">&#39;gz&#39;</span>)</span></code></pre></div>
 <div class="callout-note">
 <p><strong>Coming soon:</strong> processing raw ASV sequence and
 taxonomy tables to build a relational (phyloseq) database to use as a
@@ -2558,62 +2591,62 @@ Check classification rates
 encourage you to further filter your ASVs to remove ultra rare ones
 before doing this. Here, it allows us to analyse classification
 rates.</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;phyloseq&quot;</span>)</span>
-<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a></span>
-<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="fu">rownames</span>(seqtab_16S) <span class="ot">&lt;-</span> sample_names_clean</span>
-<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a></span>
-<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">phyloseq</span>(</span>
-<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a>  <span class="fu">tax_table</span>(tax_Species),</span>
-<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a>  <span class="fu">otu_table</span>(seqtab_16S, <span class="at">taxa_are_rows =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a>)</span>
-<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a></span>
-<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="fu">write_rds</span>(ps, <span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;phyloseq&quot;</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="fu">rownames</span>(seqtab_16S) <span class="ot">&lt;-</span> sample_names_clean</span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">phyloseq</span>(</span>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a>  <span class="fu">tax_table</span>(tax_Species),</span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a>  <span class="fu">otu_table</span>(seqtab_16S, <span class="at">taxa_are_rows =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>)</span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a></span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="fu">write_rds</span>(ps, <span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span></code></pre></div>
 <p>A useful sanity check: what proportion of ASVs (and reads) could be
 assigned at each taxonomic rank?</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a></span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>melted <span class="ot">&lt;-</span> ps <span class="sc">%&gt;%</span></span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>  <span class="fu">psmelt</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a>  <span class="fu">filter</span>(Abundance <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a>  <span class="fu">group_by</span>(Sample) <span class="sc">%&gt;%</span></span>
-<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">relAb =</span> Abundance <span class="sc">/</span> <span class="fu">sum</span>(Abundance))</span>
-<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a></span>
-<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a>ranks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;Family&#39;</span>, <span class="st">&#39;Genus&#39;</span>, <span class="st">&#39;Species&#39;</span>)</span>
-<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a></span>
-<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a>classification <span class="ot">&lt;-</span> <span class="fu">map</span>(ranks, <span class="cf">function</span>(rank) {</span>
-<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a>  melted <span class="sc">%&gt;%</span></span>
-<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a>    <span class="fu">filter</span>(relAb <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a>    <span class="fu">select</span>(Sample, <span class="sc">!!</span><span class="fu">sym</span>(rank), relAb) <span class="sc">%&gt;%</span></span>
-<span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">classified =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(<span class="sc">!!</span><span class="fu">sym</span>(rank)) <span class="sc">~</span> <span class="dv">0</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb35-16"><a href="#cb35-16" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb35-17"><a href="#cb35-17" tabindex="-1"></a>      <span class="at">asv_prop   =</span> <span class="fu">sum</span>(classified) <span class="sc">/</span> <span class="fu">n</span>(),          <span class="co"># proportion of ASVs classified</span></span>
-<span id="cb35-18"><a href="#cb35-18" tabindex="-1"></a>      <span class="at">relAb_prop =</span> <span class="fu">sum</span>(classified <span class="sc">*</span> relAb)         <span class="co"># abundance-weighted proportion</span></span>
-<span id="cb35-19"><a href="#cb35-19" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
-<span id="cb35-20"><a href="#cb35-20" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&#39;relAb_prop&#39;</span>, <span class="st">&#39;asv_prop&#39;</span>), <span class="at">names_to =</span> <span class="st">&#39;proportion_type&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb35-21"><a href="#cb35-21" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">taxRank =</span> <span class="fu">factor</span>(rank, <span class="at">levels =</span> ranks))</span>
-<span id="cb35-22"><a href="#cb35-22" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">list_rbind</span>()</span>
-<span id="cb35-23"><a href="#cb35-23" tabindex="-1"></a></span>
-<span id="cb35-24"><a href="#cb35-24" tabindex="-1"></a>classification <span class="sc">%&gt;%</span></span>
-<span id="cb35-25"><a href="#cb35-25" tabindex="-1"></a>  <span class="fu">filter</span>(proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb35-26"><a href="#cb35-26" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proportion_type =</span> <span class="fu">case_when</span>(</span>
-<span id="cb35-27"><a href="#cb35-27" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>   <span class="sc">~</span> <span class="st">&#39;Proportion of ASVs&#39;</span>,</span>
-<span id="cb35-28"><a href="#cb35-28" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;relAb_prop&#39;</span> <span class="sc">~</span> <span class="st">&#39;Proportion of reads&#39;</span></span>
-<span id="cb35-29"><a href="#cb35-29" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb35-30"><a href="#cb35-30" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">x =</span> taxRank, <span class="at">fill =</span> taxRank)) <span class="sc">+</span></span>
-<span id="cb35-31"><a href="#cb35-31" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group =</span> Sample), <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">colour =</span> <span class="st">&#39;grey&#39;</span>) <span class="sc">+</span></span>
-<span id="cb35-32"><a href="#cb35-32" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
-<span id="cb35-33"><a href="#cb35-33" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">&#39;Set2&#39;</span>) <span class="sc">+</span></span>
-<span id="cb35-34"><a href="#cb35-34" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb35-35"><a href="#cb35-35" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Proportion of classified ASVs&#39;</span>) <span class="sc">+</span></span>
-<span id="cb35-36"><a href="#cb35-36" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb35-37"><a href="#cb35-37" tabindex="-1"></a>    <span class="at">axis.ticks.x    =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb35-38"><a href="#cb35-38" tabindex="-1"></a>    <span class="at">axis.title.x    =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb35-39"><a href="#cb35-39" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&#39;none&#39;</span></span>
-<span id="cb35-40"><a href="#cb35-40" tabindex="-1"></a>  )</span>
-<span id="cb35-41"><a href="#cb35-41" tabindex="-1"></a></span>
-<span id="cb35-42"><a href="#cb35-42" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&#39;16S_classrate.pdf&#39;</span>),</span>
-<span id="cb35-43"><a href="#cb35-43" tabindex="-1"></a>       <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>, <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">1600</span>,</span>
-<span id="cb35-44"><a href="#cb35-44" tabindex="-1"></a>       <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">260</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>melted <span class="ot">&lt;-</span> ps <span class="sc">%&gt;%</span></span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>  <span class="fu">psmelt</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>  <span class="fu">filter</span>(Abundance <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>  <span class="fu">group_by</span>(Sample) <span class="sc">%&gt;%</span></span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">relAb =</span> Abundance <span class="sc">/</span> <span class="fu">sum</span>(Abundance))</span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a>ranks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;Family&#39;</span>, <span class="st">&#39;Genus&#39;</span>, <span class="st">&#39;Species&#39;</span>)</span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a></span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a>classification <span class="ot">&lt;-</span> <span class="fu">map</span>(ranks, <span class="cf">function</span>(rank) {</span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a>  melted <span class="sc">%&gt;%</span></span>
+<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a>    <span class="fu">filter</span>(relAb <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a>    <span class="fu">select</span>(Sample, <span class="sc">!!</span><span class="fu">sym</span>(rank), relAb) <span class="sc">%&gt;%</span></span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">classified =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(<span class="sc">!!</span><span class="fu">sym</span>(rank)) <span class="sc">~</span> <span class="dv">0</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a>      <span class="at">asv_prop   =</span> <span class="fu">sum</span>(classified) <span class="sc">/</span> <span class="fu">n</span>(),          <span class="co"># proportion of ASVs classified</span></span>
+<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a>      <span class="at">relAb_prop =</span> <span class="fu">sum</span>(classified <span class="sc">*</span> relAb)         <span class="co"># abundance-weighted proportion</span></span>
+<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
+<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&#39;relAb_prop&#39;</span>, <span class="st">&#39;asv_prop&#39;</span>), <span class="at">names_to =</span> <span class="st">&#39;proportion_type&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">taxRank =</span> <span class="fu">factor</span>(rank, <span class="at">levels =</span> ranks))</span>
+<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">list_rbind</span>()</span>
+<span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a></span>
+<span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a>classification <span class="sc">%&gt;%</span></span>
+<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a>  <span class="fu">filter</span>(proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb37-26"><a href="#cb37-26" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proportion_type =</span> <span class="fu">case_when</span>(</span>
+<span id="cb37-27"><a href="#cb37-27" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>   <span class="sc">~</span> <span class="st">&#39;Proportion of ASVs&#39;</span>,</span>
+<span id="cb37-28"><a href="#cb37-28" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;relAb_prop&#39;</span> <span class="sc">~</span> <span class="st">&#39;Proportion of reads&#39;</span></span>
+<span id="cb37-29"><a href="#cb37-29" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb37-30"><a href="#cb37-30" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">x =</span> taxRank, <span class="at">fill =</span> taxRank)) <span class="sc">+</span></span>
+<span id="cb37-31"><a href="#cb37-31" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group =</span> Sample), <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">colour =</span> <span class="st">&#39;grey&#39;</span>) <span class="sc">+</span></span>
+<span id="cb37-32"><a href="#cb37-32" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb37-33"><a href="#cb37-33" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">&#39;Set2&#39;</span>) <span class="sc">+</span></span>
+<span id="cb37-34"><a href="#cb37-34" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb37-35"><a href="#cb37-35" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Proportion of classified ASVs&#39;</span>) <span class="sc">+</span></span>
+<span id="cb37-36"><a href="#cb37-36" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb37-37"><a href="#cb37-37" tabindex="-1"></a>    <span class="at">axis.ticks.x    =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb37-38"><a href="#cb37-38" tabindex="-1"></a>    <span class="at">axis.title.x    =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb37-39"><a href="#cb37-39" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&#39;none&#39;</span></span>
+<span id="cb37-40"><a href="#cb37-40" tabindex="-1"></a>  )</span>
+<span id="cb37-41"><a href="#cb37-41" tabindex="-1"></a></span>
+<span id="cb37-42"><a href="#cb37-42" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&#39;16S_classrate.pdf&#39;</span>),</span>
+<span id="cb37-43"><a href="#cb37-43" tabindex="-1"></a>       <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>, <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">1600</span>,</span>
+<span id="cb37-44"><a href="#cb37-44" tabindex="-1"></a>       <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">260</span>)</span></code></pre></div>
 </details>
 <hr />
 <p><em>For questions or issues with this pipeline, refer to the <a href="https://github.com/benjjneb/dada2/issues">DADA2 GitHub issues
