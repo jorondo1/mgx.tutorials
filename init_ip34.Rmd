@@ -151,6 +151,7 @@ echo umask 007 >> ~/.bashrc
 # Allows access to certain programs (e.g. cutadapt):
 echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc 
 echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc			
+echo export TERM=screen >> ~/.bashrc
 
 # Create a $ILAFORES variable:
 echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc

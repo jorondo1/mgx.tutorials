@@ -1970,12 +1970,13 @@ every time you login.
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="bu">echo</span> export TERM=screen <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
