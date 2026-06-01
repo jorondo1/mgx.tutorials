@@ -441,11 +441,16 @@ seqtab <- makeSequenceTable(mergers_pooled)
 
 ## Filter by expected amplicon length
 
-If you sequenced fixed-length amplicons (e.g., 16S), you should see high frequency within the expected amplicon length. Sequences outside this range are likely artefacts (non-specific amplification, chimeras not yet removed). Adjust the range to match your amplicon.
+If you sequenced fixed-length amplicons (e.g., 16S), you should see high frequency within the expected amplicon length. Sequences outside this range are likely artefacts (non-specific amplification, chimeras not yet removed). 
+
+**Adjust the range to match your amplicon, based on the distribution:**
 
 ```{r length-filter}
+
+# Show distribution:
 table(nchar(getSequences(seqtab)))
 
+# Subset within target range:
 seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% 290:310]
 ```
 

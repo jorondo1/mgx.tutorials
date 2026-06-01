@@ -2321,10 +2321,14 @@ amplicon length</h2>
 <p>If you sequenced fixed-length amplicons (e.g., 16S), you should see
 high frequency within the expected amplicon length. Sequences outside
 this range are likely artefacts (non-specific amplification, chimeras
-not yet removed). Adjust the range to match your amplicon.</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab)))</span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a></span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>]</span></code></pre></div>
+not yet removed).</p>
+<p><strong>Adjust the range to match your amplicon, based on the
+distribution:</strong></p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Show distribution:</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">nchar</span>(<span class="fu">getSequences</span>(seqtab)))</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="co"># Subset within target range:</span></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>]</span></code></pre></div>
 <p>For variable-length amplicons, you can skip this step by running</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab</span></code></pre></div>
 <p>or simply increase the range to plausible values.</p>
