@@ -1832,7 +1832,7 @@ font-size: 0.95em;
 <h1 class="title toc-ignore">Getting started on ip34 (Mammouth)</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire / Laforest-Lapointe
 Lab</h4>
-<h4 class="date">Last updated: 2026-04-01</h4>
+<h4 class="date">Last updated: 2026-06-01</h4>
 
 </div>
 
@@ -2101,13 +2101,96 @@ post</a>.</p>
 </div>
 <div id="section-1" class="section level1 unnumbered">
 <h1 class="unnumbered"></h1>
-<div id="coming-soon" class="section level4" number="5.2.0.1">
-<h4><span class="header-section-number">5.2.0.1</span> Coming soon:</h4>
+</div>
+<div id="visualizing-output-files-locally" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Visualizing output
+files locally</h1>
+<p>When you generate plots or other output files on ip34, you can’t open
+them directly because there is no graphic interface. To view them, you
+need to <strong>download them to your local computer</strong> using
+<code>scp</code> (Secure Copy Protocol) or `rsync``. This is done from a
+<strong>local terminal</strong> (not from your ip34 session).</p>
+<div id="finding-the-path-on-ip34" class="section level2" number="6.1">
+<h2><span class="header-section-number">6.1</span> Finding the path on
+ip34</h2>
+<p>First, you need the full path to the file or folder you want to
+download. In your ip34 session, navigate to the relevant directory and
+run:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="bu">echo</span> <span class="va">$PWD</span></span></code></pre></div>
+<p>This prints the absolute path to your current directory, e.g.:</p>
+<pre><code>/jbod2/def-ilafores/analysis/2026_MyProject/output_plots</code></pre>
+<div class="callout-danger">
+<p>These are not R commands! You need access to a bash shell to do this.
+All the more reason to work with <code>tmux</code>, because now you can
+just detach from your session (<code>crtl+b</code>, then
+<code>d</code>); you’ll land in your home session on ip34. There, you
+can run the command above to find the path to the desired output
+folder.</p>
+</div>
+</div>
+<div id="downloading-your-files" class="section level2 tabset" number="6.2">
+<h2 class="tabset"><span class="header-section-number">6.2</span>
+Downloading your files</h2>
+<p>This part needs to be done from a local shell, meaning a new shell
+that’s not connected to ip34.</p>
+<p>Generally, it looks like this (example with <code>scp</code>)</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination</span></code></pre></div>
 <ul>
+<li><code>-r</code> copies directories recursively, so you don’t have to
+point to individual files; you can copy the entire output directory and
+its content, e.g. <code>X_DADA_Summary</code> from the <a href="https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html">improved
+DADA2 pipeline</a>.</li>
+<li>Replace <code>username</code> with your CCS username</li>
+<li>The part after <code>:</code> is the absolute path of the directory
+you want to copy, found with <code>echo $PWD</code></li>
+<li>The second part is where on your computer you want these files
+copied</li>
+</ul>
+<p>This command will prompt your for your ip34 password every time,
+including 2FA if applicable.</p>
+<div id="on-a-mac-1" class="section level3" number="6.2.1">
+<h3><span class="header-section-number">6.2.1</span> On a Mac</h3>
+<p>Open a new Terminal window and run:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-avr</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/</span></code></pre></div>
+<p><code>rsync</code> is available natively on Mac and will sync only
+files that have changed, making repeated transfers much faster.</p>
+</div>
+<div id="on-windows-1" class="section level3" number="6.2.2">
+<h3><span class="header-section-number">6.2.2</span> On Windows</h3>
+<p>Open a new PowerShell window and run:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:<span class="dt">\U</span>sers<span class="dt">\Y</span>ourName<span class="dt">\D</span>ocuments<span class="dt">\m</span>y_project<span class="dt">\</span></span></code></pre></div>
+<div class="callout-note">
+<p><strong>Tip:</strong> To find the full path of a destination folder
+on Windows, right-click the folder, select <strong>Properties</strong>,
+and copy the path shown under <strong>Location</strong>. Windows paths
+use backslashes <code>\</code> and start with the drive letter
+(e.g. <code>C:</code>).</p>
+</div>
+</div>
+</div>
+<div id="section-2" class="section level2 unnumbered">
+<h2 class="unnumbered"></h2>
+<details>
+<summary>
+Save yourself time in the future…
+</summary>
+<p>Once you’ve build your rsync or scp command, copy it somewhere so you
+don’t have to do rewrite it or find the path to the source folder from
+within ip34 every time. I like to leave mine commented at the top of my
+R script.</p>
+</details>
+<p>Once the transfer completes, the files will be available locally and
+you can open them as usual.</p>
+</div>
+</div>
+<div id="coming-soon" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Coming soon…</h1>
+<ul>
+<li><a href="https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html">improved
+DADA2 pipeline</a> (beta)</li>
 <li>metagenomic data processing pipelines</li>
 <li>relative abundance matrix analyses</li>
 </ul>
-</div>
 </div>
 
 

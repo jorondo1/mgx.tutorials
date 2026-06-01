@@ -255,8 +255,83 @@ To learn more about tmux (like how to see multiple sessions simultaneously), che
 # {-}
 
 
-#### Coming soon: 
+# Visualizing output files locally
 
+When you generate plots or other output files on ip34, you can't open them directly because there is no graphic interface. To view them, you need to **download them to your local computer** using `scp` (Secure Copy Protocol) or `rsync``. This is done from a **local terminal** (not from your ip34 session).
+
+## Finding the path on ip34
+
+First, you need the full path to the file or folder you want to download. In your ip34 session, navigate to the relevant directory and run:
+
+```{bash, eval=FALSE}
+echo $PWD
+```
+
+This prints the absolute path to your current directory, e.g.:
+
+```
+/jbod2/def-ilafores/analysis/2026_MyProject/output_plots
+```
+
+<div class="callout-danger">
+These are not R commands! You need access to a bash shell to do this. All the more reason to work with `tmux`, because now you can just detach from your session (`crtl+b`, then `d`); you'll land in your home session on ip34. There, you can run the command above to find the path to the desired output folder. 
+</div>
+
+## Downloading your files {.tabset}
+
+This part needs to be done from a local shell, meaning a new shell that's not connected to ip34.
+
+Generally, it looks like this (example with `scp`)
+
+```{bash, eval=FALSE}
+scp -r username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination
+```
+
+- `-r` copies directories recursively, so you don't have to point to individual files; you can copy the entire output directory and its content, e.g. `X_DADA_Summary` from the [improved DADA2 pipeline](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html).
+- Replace `username` with your CCS username
+- The part after `:` is the absolute path of the directory you want to copy, found with `echo $PWD`
+- The second part is where on your computer you want these files copied
+
+This command will prompt your for your ip34 password every time, including 2FA if applicable.
+
+### On a Mac
+
+Open a new Terminal window and run:
+
+```{bash, eval=FALSE}
+rsync -avr username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/
+```
+
+`rsync` is available natively on Mac and will sync only files that have changed, making repeated transfers much faster.
+
+### On Windows
+
+Open a new PowerShell window and run:
+
+```{bash, eval=FALSE}
+scp -r username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:\Users\YourName\Documents\my_project\
+```
+
+<div class="callout-note">
+**Tip:** To find the full path of a destination folder on Windows, right-click the folder, select **Properties**, and copy the path shown under **Location**. Windows paths use backslashes `\` and start with the drive letter (e.g. `C:`).
+</div>
+## {-}
+
+<details>
+
+<summary>
+Save yourself time in the future...
+</summary>
+
+Once you've build your rsync or scp command, copy it somewhere so you don't have to do rewrite it or find the path to the source folder from within ip34 every time. I like to leave mine commented at the top of my R script.
+
+</details>
+
+Once the transfer completes, the files will be available locally and you can open them as usual.
+
+# Coming soon...
+
+- [improved DADA2 pipeline](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html) (beta)
 - metagenomic data processing pipelines
 - relative abundance matrix analyses
 
