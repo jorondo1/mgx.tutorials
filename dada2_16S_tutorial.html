@@ -2627,61 +2627,64 @@ encourage you to further filter your ASVs to remove ultra rare ones
 before doing this. Here, it allows us to analyse classification
 rates.</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">&quot;phyloseq&quot;</span>)</span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a></span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="fu">rownames</span>(seqtab_16S) <span class="ot">&lt;-</span> sample_names_clean</span>
-<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a></span>
-<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">phyloseq</span>(</span>
-<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>  <span class="fu">tax_table</span>(tax_Species),</span>
-<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>  <span class="fu">otu_table</span>(seqtab_16S, <span class="at">taxa_are_rows =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>)</span>
-<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a></span>
-<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="fu">write_rds</span>(ps, <span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span></code></pre></div>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">library</span>(phyloseq)</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a><span class="fu">rownames</span>(seqtab.filt) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">phyloseq</span>(</span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>  <span class="fu">tax_table</span>(taxonomy),</span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>  <span class="fu">otu_table</span>(seqtab.filt, <span class="at">taxa_are_rows =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a>); ps</span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a></span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="fu">write_rds</span>(ps, <span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span></code></pre></div>
 <p>A useful sanity check: what proportion of ASVs (and reads) could be
 assigned at each taxonomic rank?</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>ps <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">file.path</span>(path_out, <span class="st">&#39;ps.rds&#39;</span>))</span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a></span>
-<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>melted <span class="ot">&lt;-</span> ps <span class="sc">%&gt;%</span></span>
-<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>  <span class="fu">psmelt</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>  <span class="fu">filter</span>(Abundance <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a>  <span class="fu">group_by</span>(Sample) <span class="sc">%&gt;%</span></span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">relAb =</span> Abundance <span class="sc">/</span> <span class="fu">sum</span>(Abundance))</span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a></span>
-<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a>ranks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;Family&#39;</span>, <span class="st">&#39;Genus&#39;</span>, <span class="st">&#39;Species&#39;</span>)</span>
-<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a></span>
-<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a>classification <span class="ot">&lt;-</span> <span class="fu">map</span>(ranks, <span class="cf">function</span>(rank) {</span>
-<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a>  melted <span class="sc">%&gt;%</span></span>
-<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a>    <span class="fu">filter</span>(relAb <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a>    <span class="fu">select</span>(Sample, <span class="sc">!!</span><span class="fu">sym</span>(rank), relAb) <span class="sc">%&gt;%</span></span>
-<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">classified =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(<span class="sc">!!</span><span class="fu">sym</span>(rank)) <span class="sc">~</span> <span class="dv">0</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a>      <span class="at">asv_prop   =</span> <span class="fu">sum</span>(classified) <span class="sc">/</span> <span class="fu">n</span>(),          <span class="co"># proportion of ASVs classified</span></span>
-<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a>      <span class="at">relAb_prop =</span> <span class="fu">sum</span>(classified <span class="sc">*</span> relAb)         <span class="co"># abundance-weighted proportion</span></span>
-<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
-<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&#39;relAb_prop&#39;</span>, <span class="st">&#39;asv_prop&#39;</span>), <span class="at">names_to =</span> <span class="st">&#39;proportion_type&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">taxRank =</span> <span class="fu">factor</span>(rank, <span class="at">levels =</span> ranks))</span>
-<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">list_rbind</span>()</span>
-<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a></span>
-<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a>classification <span class="sc">%&gt;%</span></span>
-<span id="cb38-25"><a href="#cb38-25" tabindex="-1"></a>  <span class="fu">filter</span>(proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb38-26"><a href="#cb38-26" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proportion_type =</span> <span class="fu">case_when</span>(</span>
-<span id="cb38-27"><a href="#cb38-27" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>   <span class="sc">~</span> <span class="st">&#39;Proportion of ASVs&#39;</span>,</span>
-<span id="cb38-28"><a href="#cb38-28" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;relAb_prop&#39;</span> <span class="sc">~</span> <span class="st">&#39;Proportion of reads&#39;</span></span>
-<span id="cb38-29"><a href="#cb38-29" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb38-30"><a href="#cb38-30" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">x =</span> taxRank, <span class="at">fill =</span> taxRank)) <span class="sc">+</span></span>
-<span id="cb38-31"><a href="#cb38-31" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group =</span> Sample), <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">colour =</span> <span class="st">&#39;grey&#39;</span>) <span class="sc">+</span></span>
-<span id="cb38-32"><a href="#cb38-32" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
-<span id="cb38-33"><a href="#cb38-33" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">&#39;Set2&#39;</span>) <span class="sc">+</span></span>
-<span id="cb38-34"><a href="#cb38-34" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb38-35"><a href="#cb38-35" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Proportion of classified ASVs&#39;</span>) <span class="sc">+</span></span>
-<span id="cb38-36"><a href="#cb38-36" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
-<span id="cb38-37"><a href="#cb38-37" tabindex="-1"></a>    <span class="at">axis.ticks.x    =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb38-38"><a href="#cb38-38" tabindex="-1"></a>    <span class="at">axis.title.x    =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb38-39"><a href="#cb38-39" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&#39;none&#39;</span></span>
-<span id="cb38-40"><a href="#cb38-40" tabindex="-1"></a>  )</span>
-<span id="cb38-41"><a href="#cb38-41" tabindex="-1"></a></span>
-<span id="cb38-42"><a href="#cb38-42" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&#39;16S_classrate.pdf&#39;</span>),</span>
-<span id="cb38-43"><a href="#cb38-43" tabindex="-1"></a>       <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>, <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">1600</span>,</span>
-<span id="cb38-44"><a href="#cb38-44" tabindex="-1"></a>       <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">260</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># if needed reload the ps object:</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="co"># ps &lt;- readRDS(file.path(path_out, &#39;ps.rds&#39;))</span></span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>melted <span class="ot">&lt;-</span> ps <span class="sc">%&gt;%</span></span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>  <span class="fu">psmelt</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a>  <span class="fu">filter</span>(Abundance <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>  <span class="fu">group_by</span>(Sample) <span class="sc">%&gt;%</span></span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">relAb =</span> Abundance <span class="sc">/</span> <span class="fu">sum</span>(Abundance))</span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a></span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a>ranks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;Kingdom&#39;</span>,<span class="st">&#39;Phylum&#39;</span>,<span class="st">&#39;Class&#39;</span>,<span class="st">&#39;Order&#39;</span>, <span class="st">&#39;Family&#39;</span>, <span class="st">&#39;Genus&#39;</span>)</span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a></span>
+<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a>classification <span class="ot">&lt;-</span> <span class="fu">map</span>(ranks, <span class="cf">function</span>(rank) {</span>
+<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a>  melted <span class="sc">%&gt;%</span></span>
+<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a>    <span class="fu">filter</span>(relAb <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a>    <span class="fu">select</span>(Sample, <span class="sc">!!</span><span class="fu">sym</span>(rank), relAb) <span class="sc">%&gt;%</span></span>
+<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">classified =</span> <span class="fu">case_when</span>(<span class="fu">is.na</span>(<span class="sc">!!</span><span class="fu">sym</span>(rank)) <span class="sc">~</span> <span class="dv">0</span>, <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a>      <span class="at">asv_prop   =</span> <span class="fu">sum</span>(classified) <span class="sc">/</span> <span class="fu">n</span>(),          <span class="co"># proportion of ASVs classified</span></span>
+<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a>      <span class="at">relAb_prop =</span> <span class="fu">sum</span>(classified <span class="sc">*</span> relAb)         <span class="co"># proportion of sequences classified</span></span>
+<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
+<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&#39;relAb_prop&#39;</span>, <span class="st">&#39;asv_prop&#39;</span>), <span class="at">names_to =</span> <span class="st">&#39;proportion_type&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">taxRank =</span> <span class="fu">factor</span>(rank, <span class="at">levels =</span> ranks))</span>
+<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">list_rbind</span>()</span>
+<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a></span>
+<span id="cb38-25"><a href="#cb38-25" tabindex="-1"></a>p <span class="ot">&lt;-</span> classification <span class="sc">%&gt;%</span></span>
+<span id="cb38-26"><a href="#cb38-26" tabindex="-1"></a>  <span class="fu">filter</span>(proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-27"><a href="#cb38-27" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proportion_type =</span> <span class="fu">case_when</span>(</span>
+<span id="cb38-28"><a href="#cb38-28" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;asv_prop&#39;</span>   <span class="sc">~</span> <span class="st">&#39;Proportion of ASVs&#39;</span>,</span>
+<span id="cb38-29"><a href="#cb38-29" tabindex="-1"></a>    proportion_type <span class="sc">==</span> <span class="st">&#39;relAb_prop&#39;</span> <span class="sc">~</span> <span class="st">&#39;Proportion of reads&#39;</span></span>
+<span id="cb38-30"><a href="#cb38-30" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb38-31"><a href="#cb38-31" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> value, <span class="at">x =</span> taxRank, <span class="at">fill =</span> taxRank)) <span class="sc">+</span></span>
+<span id="cb38-32"><a href="#cb38-32" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group =</span> Sample), <span class="at">linewidth =</span> <span class="dv">1</span>, <span class="at">colour =</span> <span class="st">&#39;grey&#39;</span>) <span class="sc">+</span></span>
+<span id="cb38-33"><a href="#cb38-33" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb38-34"><a href="#cb38-34" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">&#39;Set2&#39;</span>) <span class="sc">+</span></span>
+<span id="cb38-35"><a href="#cb38-35" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb38-36"><a href="#cb38-36" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">&#39;Proportion of classified ASVs&#39;</span>) <span class="sc">+</span></span>
+<span id="cb38-37"><a href="#cb38-37" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb38-38"><a href="#cb38-38" tabindex="-1"></a>    <span class="at">axis.ticks.x    =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb38-39"><a href="#cb38-39" tabindex="-1"></a>    <span class="at">axis.title.x    =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb38-40"><a href="#cb38-40" tabindex="-1"></a>    <span class="at">legend.position =</span> <span class="st">&#39;none&#39;</span></span>
+<span id="cb38-41"><a href="#cb38-41" tabindex="-1"></a>  )</span>
+<span id="cb38-42"><a href="#cb38-42" tabindex="-1"></a></span>
+<span id="cb38-43"><a href="#cb38-43" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(path_summary, <span class="st">&#39;classrate.pdf&#39;</span>),</span>
+<span id="cb38-44"><a href="#cb38-44" tabindex="-1"></a>       <span class="at">plot =</span> p,</span>
+<span id="cb38-45"><a href="#cb38-45" tabindex="-1"></a>       <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>, <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">1600</span>,</span>
+<span id="cb38-46"><a href="#cb38-46" tabindex="-1"></a>       <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">260</span>)</span></code></pre></div>
 </details>
 <hr />
 <p><em>For questions or issues with this pipeline, refer to the <a href="https://github.com/benjjneb/dada2/issues">DADA2 GitHub issues

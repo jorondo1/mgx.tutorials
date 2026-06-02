@@ -703,13 +703,14 @@ This is a quick code to build a phyloseq object. For analyses, we encourage you 
 
 ```{r phyloseq}
 BiocManager::install("phyloseq")
+library(phyloseq)
 
-rownames(seqtab_16S) <- sample_names_clean
+rownames(seqtab.filt) <- sample.names
 
 ps <- phyloseq(
-  tax_table(tax_Species),
-  otu_table(seqtab_16S, taxa_are_rows = FALSE)
-)
+  tax_table(taxonomy),
+  otu_table(seqtab.filt, taxa_are_rows = FALSE)
+); ps
 
 write_rds(ps, file.path(path_out, 'ps.rds'))
 ```
@@ -718,7 +719,8 @@ write_rds(ps, file.path(path_out, 'ps.rds'))
 A useful sanity check: what proportion of ASVs (and reads) could be assigned at each taxonomic rank?
 
 ```{r classrate}
-ps <- readRDS(file.path(path_out, 'ps.rds'))
+# if needed reload the ps object:
+# ps <- readRDS(file.path(path_out, 'ps.rds'))
 
 melted <- ps %>%
   psmelt() %>%
@@ -726,7 +728,7 @@ melted <- ps %>%
   group_by(Sample) %>%
   mutate(relAb = Abundance / sum(Abundance))
 
-ranks <- c('Family', 'Genus', 'Species')
+ranks <- c('Kingdom','Phylum','Class','Order', 'Family', 'Genus')
 
 classification <- map(ranks, function(rank) {
   melted %>%
@@ -735,13 +737,13 @@ classification <- map(ranks, function(rank) {
     mutate(classified = case_when(is.na(!!sym(rank)) ~ 0, TRUE ~ 1)) %>%
     summarise(
       asv_prop   = sum(classified) / n(),          # proportion of ASVs classified
-      relAb_prop = sum(classified * relAb)         # abundance-weighted proportion
+      relAb_prop = sum(classified * relAb)         # proportion of sequences classified
     ) %>%
     pivot_longer(cols = c('relAb_prop', 'asv_prop'), names_to = 'proportion_type') %>%
     mutate(taxRank = factor(rank, levels = ranks))
 }) %>% list_rbind()
 
-classification %>%
+p <- classification %>%
   filter(proportion_type == 'asv_prop') %>%
   mutate(proportion_type = case_when(
     proportion_type == 'asv_prop'   ~ 'Proportion of ASVs',
@@ -759,7 +761,8 @@ classification %>%
     legend.position = 'none'
   )
 
-ggsave(file.path(path_summary, '16S_classrate.pdf'),
+ggsave(file.path(path_summary, 'classrate.pdf'),
+       plot = p,
        bg = 'white', width = 1600, height = 1600,
        units = 'px', dpi = 260)
 ```
