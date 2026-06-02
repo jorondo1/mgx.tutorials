@@ -509,6 +509,7 @@ track_change <- mgx.tools::track_dada(
   out = out,
   sample.names = sample.names,
   dadaFs = dadaFs,
+  dadaRs = dadaRs,
   mergers = mergers_pooled,
   seqtab.nochim = seqtab.nochim
 )

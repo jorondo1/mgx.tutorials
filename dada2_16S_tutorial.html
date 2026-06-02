@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jonathan Rondeau-Leclaire" />
 
-<meta name="date" content="2026-06-01" />
+<meta name="date" content="2026-06-02" />
 
 <title>DADA2 - 16S rRNA Processing Tutorial</title>
 
@@ -1832,7 +1832,7 @@ font-size: 0.95em;
 
 <h1 class="title toc-ignore">DADA2 - 16S rRNA Processing Tutorial</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire</h4>
-<h4 class="date">2026-06-01</h4>
+<h4 class="date">2026-06-02</h4>
 
 </div>
 
@@ -2386,16 +2386,17 @@ step.</p>
 <span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="at">out =</span> out,</span>
 <span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="at">sample.names =</span> sample.names,</span>
 <span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>  <span class="at">dadaFs =</span> dadaFs,</span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>  <span class="at">mergers =</span> mergers_pooled,</span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>  <span class="at">seqtab.nochim =</span> seqtab.nochim</span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>)</span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a></span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="fu">p_load</span>(patchwork)</span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a></span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">plot_track_change</span>(track_change) <span class="sc">%&gt;%</span></span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;track_changes.pdf&quot;</span>),</span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a>         <span class="at">plot =</span> ., <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a>         <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">2200</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>  <span class="at">dadaRs =</span> dadaRs,</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>  <span class="at">mergers =</span> mergers_pooled,</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>  <span class="at">seqtab.nochim =</span> seqtab.nochim</span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a>)</span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="fu">p_load</span>(patchwork)</span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a>mgx.tools<span class="sc">::</span><span class="fu">plot_track_change</span>(track_change) <span class="sc">%&gt;%</span></span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">file.path</span>(path_summary, <span class="st">&quot;track_changes.pdf&quot;</span>),</span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a>         <span class="at">plot =</span> ., <span class="at">bg =</span> <span class="st">&#39;white&#39;</span>,</span>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a>         <span class="at">width =</span> <span class="dv">1600</span>, <span class="at">height =</span> <span class="dv">2200</span>, <span class="at">units =</span> <span class="st">&#39;px&#39;</span>, <span class="at">dpi =</span> <span class="dv">180</span>)</span></code></pre></div>
 <p><strong>General guidelines</strong></p>
 <p>Don’t take these to the bank, but here’s a very approximate guideline
 of what might be a red flag:</p>
