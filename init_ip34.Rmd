@@ -171,15 +171,15 @@ echo echo "REMINDER: change group id before working!" >> ~/.bashrc
 echo echo "newgrp def-<your-PI-group-name>" >> ~/.bashrc
 
 # Execute the .bashrc (happens every time you log in, but we need those variables now!)
-. ~/.bashrc 
+source ~/.bashrc 
 
 ```
 
 <div class="callout-note">
-Each command with `>>` appends something to the `.bashrc` file. If you do them multiple times, you'll be adding multiple lines to it.
+Each command with `>>` appends something to the `.bashrc` file. If you do them multiple times, you'll be adding multiple lines to it. `.bashrc` is a file that is executed each time you log in, so you can add more variable definitions to it, which we'll do below.
 </div>
 
-This setup will allow others within your group (def-ilafores) to write/execute files you've created, allow you to access certain programs on mugqic, and finally will create a simple variable you can use to navigate to the def-ilafores directory, which is where you should generally work from. To get there and, for example, create a new project (under the analysis folder would be the best place), I suggest adding another variable to your `.bashrc` that will let you use the path to your project directory without having to type it in its entirety every time.
+I suggest adding another variable to your `.bashrc` that will contain the path to your project directory, allowing you to move to that directory without having to type the full path every time.
 
 In the following, replace `your_project_name` with the name you want your project directory to have, and `PROJECT1` by a short name you'll remember (it will create a variable pointing to your project directory path, which you can use in place of the path when using the command line).
 
@@ -188,7 +188,7 @@ In the following, replace `your_project_name` with the name you want your projec
 echo "export PROJECT1=$ILAFORES/analysis/your_project_name" >> ~/.bashrc
 
 # execute the bashrc:
-. ~/.bashrc
+source ~/.bashrc
 
 # create your project directory:
 mkdir -p $PROJECT1

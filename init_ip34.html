@@ -1985,21 +1985,17 @@ ever!</p>
 <span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="bu">echo</span> echo <span class="st">&quot;newgrp def-&lt;your-PI-group-name&gt;&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
 <span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
 <span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="bu">source</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
-adding multiple lines to it.</p>
+adding multiple lines to it. <code>.bashrc</code> is a file that is
+executed each time you log in, so you can add more variable definitions
+to it, which we’ll do below.</p>
 </div>
-<p>This setup will allow others within your group (def-ilafores) to
-write/execute files you’ve created, allow you to access certain programs
-on mugqic, and finally will create a simple variable you can use to
-navigate to the def-ilafores directory, which is where you should
-generally work from. To get there and, for example, create a new project
-(under the analysis folder would be the best place), I suggest adding
-another variable to your <code>.bashrc</code> that will let you use the
-path to your project directory without having to type it in its entirety
-every time.</p>
+<p>I suggest adding another variable to your <code>.bashrc</code> that
+will contain the path to your project directory, allowing you to move to
+that directory without having to type the full path every time.</p>
 <p>In the following, replace <code>your_project_name</code> with the
 name you want your project directory to have, and <code>PROJECT1</code>
 by a short name you’ll remember (it will create a variable pointing to
@@ -2009,7 +2005,7 @@ using the command line).</p>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;export PROJECT1=</span><span class="va">$ILAFORES</span><span class="st">/analysis/your_project_name&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># execute the bashrc:</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="bu">source</span> ~/.bashrc</span>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
 <span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># create your project directory:</span></span>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$PROJECT1</span></span></code></pre></div>
