@@ -164,7 +164,7 @@ echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc
 echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
 
 # add a little reminder ...
-echo echo "Don't forget to change your group id before working! newgrp def-<your-PI-group-name>"
+echo echo "Don't forget to change your group id before working! newgrp def-<your-PI-group-name>" >> ~/.bashrc
 
 # Execute the .bashrc (happens every time you log in, but we need those variables now!)
 . ~/.bashrc 
