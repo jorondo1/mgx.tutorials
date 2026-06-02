@@ -25,6 +25,8 @@ klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to 
 **About this guide**  
 I show you how to access UdeSherbrooke's ip34 (aka Mammouth) supercomputer. This node is only accessible to UdS students and requires DRAC sponsorship. 
 
+This tutorial is tailored for members of the [Laforest Lab](https://www.laforestlab.com/), so some variables or definitions might need to be changed if you are in a different lab.
+
 Steps 1, 2 and 4 only need to be done once. 
 </div>
 
@@ -131,10 +133,10 @@ ________________________________________________________________________________
  xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
 __________|_______________________________|_________|_________|_________________
 ```
-When you see `>`at the bottom, that means Mammouth is ready to receive commands.
+When you see `>`at the bottom, that means Mammouth is ready to receive commands!
 
 <div class="callout-danger">
-**Important: you must** execute the following command, **EVERY TIME** you log on to Mammoth (or any other CCS computer for that matter):
+**Important: you must** execute the following command, **EVERY TIME** you log on to Mammoth:
 </div>
 
 ```bash
@@ -148,8 +150,9 @@ Otherwise, any file you create will only be readable and writable by you. Do not
 # Initial setup (ip34)
 
 Add a few lines to your `.bashrc` file, which is executed every time you login.
+
 <div class="callout-danger">
-You only need to do this once, ever!
+This code block only needs to be executed **once**, ever!
 </div>
 
 ```{bash bashrc}
@@ -164,10 +167,12 @@ echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc
 echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
 
 # add a little reminder ...
-echo echo "Don't forget to change your group id before working! newgrp def-<your-PI-group-name>" >> ~/.bashrc
+echo echo "REMINDER: change group id before working!" >> ~/.bashrc
+echo echo "newgrp def-<your-PI-group-name>" >> ~/.bashrc
 
 # Execute the .bashrc (happens every time you log in, but we need those variables now!)
 . ~/.bashrc 
+
 ```
 
 <div class="callout-note">

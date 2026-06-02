@@ -1846,6 +1846,9 @@ Lab</h4>
 I show you how to access UdeSherbrooke’s ip34 (aka Mammouth)
 supercomputer. This node is only accessible to UdS students and requires
 DRAC sponsorship.</p>
+<p>This tutorial is tailored for members of the <a href="https://www.laforestlab.com/">Laforest Lab</a>, so some variables
+or definitions might need to be changed if you are in a different
+lab.</p>
 <p>Steps 1, 2 and 4 only need to be done once.</p>
 </div>
 <hr />
@@ -1947,11 +1950,10 @@ ________________________________________________________________________________
  xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
 __________|_______________________________|_________|_________|_________________</code></pre>
 <p>When you see <code>&gt;</code>at the bottom, that means Mammouth is
-ready to receive commands.</p>
+ready to receive commands!</p>
 <div class="callout-danger">
 <p><strong>Important: you must</strong> execute the following command,
-<strong>EVERY TIME</strong> you log on to Mammoth (or any other CCS
-computer for that matter):</p>
+<strong>EVERY TIME</strong> you log on to Mammoth:</p>
 </div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
@@ -1962,10 +1964,11 @@ be.</p>
 <div id="initial-setup-ip34" class="section level1" number="4">
 <h1><span class="header-section-number">4</span> Initial setup
 (ip34)</h1>
-Add a few lines to your <code>.bashrc</code> file, which is executed
-every time you login.
+<p>Add a few lines to your <code>.bashrc</code> file, which is executed
+every time you login.</p>
 <div class="callout-danger">
-<p>You only need to do this once, ever!</p>
+<p>This code block only needs to be executed <strong>once</strong>,
+ever!</p>
 </div>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Sets up certain permissions: </span></span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc</span>
@@ -1978,10 +1981,11 @@ every time you login.
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># add a little reminder ...</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="bu">echo</span> echo <span class="st">&quot;Don&#39;t forget to change your group id before working! newgrp def-&lt;your-PI-group-name&gt;&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="bu">echo</span> echo <span class="st">&quot;REMINDER: change group id before working!&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="bu">echo</span> echo <span class="st">&quot;newgrp def-&lt;your-PI-group-name&gt;&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
