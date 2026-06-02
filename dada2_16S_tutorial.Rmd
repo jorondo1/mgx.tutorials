@@ -733,7 +733,7 @@ ranks <- c('Kingdom','Phylum','Class','Order', 'Family', 'Genus')
 classification <- map(ranks, function(rank) {
   melted %>%
     filter(relAb > 0) %>%
-    select(Sample, !!sym(rank), relAb) %>%
+    dplyr::select(Sample, !!sym(rank), relAb) %>%
     mutate(classified = case_when(is.na(!!sym(rank)) ~ 0, TRUE ~ 1)) %>%
     summarise(
       asv_prop   = sum(classified) / n(),          # proportion of ASVs classified
@@ -744,14 +744,14 @@ classification <- map(ranks, function(rank) {
 }) %>% list_rbind()
 
 p <- classification %>%
-  filter(proportion_type == 'asv_prop') %>%
   mutate(proportion_type = case_when(
     proportion_type == 'asv_prop'   ~ 'Proportion of ASVs',
     proportion_type == 'relAb_prop' ~ 'Proportion of reads'
   )) %>%
   ggplot(aes(y = value, x = taxRank, fill = taxRank)) +
-  geom_line(aes(group = Sample), linewidth = 1, colour = 'grey') +
+  geom_line(aes(group = Sample), linewidth = 0.5, colour = 'grey') +
   geom_boxplot() +
+  facet_grid(~proportion_type) +
   scale_colour_brewer(palette = 'Set2') +
   theme_minimal() +
   labs(y = 'Proportion of classified ASVs') +
