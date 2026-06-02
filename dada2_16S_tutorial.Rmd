@@ -571,10 +571,33 @@ For 16S, `dada2::assignTaxonomy()` is acceptable, but still consider using `DECI
 
 ## assignTaxonomy
 
-With assignTaxonomy(), you can use ready-compiled classifiers [here](https://zenodo.org/records/4587955). Download the appropriate files (including species assignment if you want this, but don't expect much with short reads 16S).
+With assignTaxonomy(), you can use ready-compiled classifiers [here](https://zenodo.org/records/4587955). Download the appropriate files (including species assignment if you want this, but don't expect much with short reads 16S). 
+
+To download it directly onto ip34, you need the download link, which you can get by right-clicking the appropriate file link (here we want `silva_nr99_v138.1_train_set.fa.gz`) in the [repository](https://zenodo.org/records/4587955) and clicking "Copy link address". 
+ 
+Here's how to do it from R directly:
+```{r}
+ref_db_path <- file.path(path_data, 'ref_taxonomy')
+dir.create(ref_db_path)
+
+# This calls the bash command "wget" which downloads files from a url:
+system(paste(
+  "wget -P",
+  ref_db_path,
+  "https://zenodo.org/records/14169026/files/silva_nr99_v138.2_toGenus_trainset.fa.gz"))
+
+# check the filename:
+list.files(ref_db_path)
+
+```
+
+<div class="callout-danger">
+The path you will get from clicking "Copy link address" will end with `?download=1`. You need to remove that string, so that the file ends in `.fa.gz`.
+</div>
 
 ```{r taxonomy}
-silva_train  <- "path/to/silva_nr99_v138.1_train_set.fa.gz"
+# Adjust the following to match your file name exactly:
+silva_train  <- file.path(ref_db_path, "silva_nr99_v138.2_toGenus_trainset.fa.gz")
 
 # Genus-level classification
 taxonomy <- assignTaxonomy(
