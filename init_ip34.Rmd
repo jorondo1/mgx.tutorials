@@ -67,7 +67,14 @@ Host ip34.ccs.usherbrooke.ca
     ServerAliveInterval 60
 ```
 
-Save it and quit. Then, open the PowerShell app and proceed with the next steps.
+Save it and quit. Then, open the PowerShell app and execute the following command:
+
+```
+$env:TERM = "xterm-256color"
+```
+
+
+Then, proceed with the next steps.
 
 ## {-}
 
@@ -151,7 +158,6 @@ echo umask 007 >> ~/.bashrc
 # Allows access to certain programs (e.g. cutadapt):
 echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc 
 echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc			
-echo export TERM=screen >> ~/.bashrc
 
 # Create a $ILAFORES variable:
 echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
@@ -228,7 +234,7 @@ what's nice?
 `nice` is recommended so your program is "nice to others" who use the same resources (so you don't hoard all the cores in ip34). Once you run this, you are now in the equivalent of an R console, which accepts R commands (don't write in bash!). The `>` at the beginning of a new line expects commands in the R language. You'll need to install the packages you need (only once), as you once did on your computer. By default, your current directory will be the one you were in when you activated R.
 </details>
 
-## Making stuff run in the background
+## Running stuff in the background with `tmux`
 
 Imagine you want to run DADA2's sample inference on hundreds of samples... that might take a while! If you want to go home and let it run while you binge-watch Friends, you can either let your laptop running (not recommended), or use a cool little tool called `tmux` directly on ip34. Essentially, tmux creates a virtual shell that runs in the background. If you close your ip34 session (or just log out), it keeps running. Within that tmux shell, you can run anything like you would on your normal shell. To get it running, log in to ip34, get where you need to be, then run:
 

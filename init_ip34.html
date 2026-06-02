@@ -1832,7 +1832,7 @@ font-size: 0.95em;
 <h1 class="title toc-ignore">Getting started on ip34 (Mammouth)</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire / Laforest-Lapointe
 Lab</h4>
-<h4 class="date">Last updated: 2026-06-01</h4>
+<h4 class="date">Last updated: 2026-06-02</h4>
 
 </div>
 
@@ -1887,8 +1887,10 @@ folder and select New &gt; Text Document</li>
 </ol>
 <pre><code>Host ip34.ccs.usherbrooke.ca
     ServerAliveInterval 60</code></pre>
-<p>Save it and quit. Then, open the PowerShell app and proceed with the
-next steps.</p>
+<p>Save it and quit. Then, open the PowerShell app and execute the
+following command:</p>
+<pre><code>$env:TERM = &quot;xterm-256color&quot;</code></pre>
+<p>Then, proceed with the next steps.</p>
 </div>
 </div>
 <div id="section" class="section level2 unnumbered">
@@ -1914,7 +1916,7 @@ steps</a> to set it up.</p>
 username (will prompt for password; nothing shows when you’ll write your
 password, that’s normal!). Here, use the username to your DRAC account
 (not your email), for example:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">ssh</span> username@ip34.ccs.usherbrooke.ca</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">ssh</span> username@ip34.ccs.usherbrooke.ca</span></code></pre></div>
 <p>You will be prompted with 2FA, which will look like:</p>
 <pre><code>Enter a passcode or select one of the following options:
 1. Duo Push to Pixel8 (Android)
@@ -1950,7 +1952,7 @@ ready to receive commands.</p>
 <p><strong>Next, you must</strong> execute the following command,
 <strong>EVERY TIME</strong> you log in.</p>
 </div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
 you. Do not add the newgrp command to your bashrc, tempting as it may
 be.</p>
@@ -1964,19 +1966,18 @@ every time you login.
 <div class="callout-danger">
 <p>You only need to do this once, ever!</p>
 </div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Sets up certain permissions: </span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="bu">echo</span> export TERM=screen <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Sets up certain permissions: </span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="bu">echo</span> umask 007 <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># Allows access to certain programs (e.g. cutadapt):</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">echo</span> export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 <span class="op">&gt;&gt;</span> ~/.bashrc </span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;module use $MUGQIC_INSTALL_HOME/modulefiles&#39;</span>  <span class="op">&gt;&gt;</span> ~/.bashrc            </span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be
@@ -1996,18 +1997,18 @@ name you want your project directory to have, and <code>PROJECT1</code>
 by a short name you’ll remember (it will create a variable pointing to
 your project directory path, which you can use in place of the path when
 using the command line).</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Makes sure the variable exists whenever you log in:</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;export PROJECT1=</span><span class="va">$ILAFORES</span><span class="st">/analysis/your_project_name&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># execute the bashrc:</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># create your project directory:</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$PROJECT1</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Makes sure the variable exists whenever you log in:</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;export PROJECT1=</span><span class="va">$ILAFORES</span><span class="st">/analysis/your_project_name&quot;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># execute the bashrc:</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># create your project directory:</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$PROJECT1</span></span></code></pre></div>
 <p>Then, whenever you log in to ip34, using the project directory
 variable name you’ve chosen (here PROJECT1), all you have to do is</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores  <span class="co"># don&#39;t forget! ;-)</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$PROJECT1</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores  <span class="co"># don&#39;t forget! ;-)</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$PROJECT1</span></span></code></pre></div>
 <p>And you can start doing science!</p>
 <div class="callout-note">
 <p>Check out <a href="https://astrobiomike.github.io/unix/unix-intro">this cool
@@ -2036,11 +2037,11 @@ people like you and me around the world. Installing packages on ip34 can
 sometimes be a bit problematic, so we have a shared library you can copy
 into your environment and then build on top of it or update depending on
 your requirements. To copy it:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> <span class="va">$ILAFORES</span>/R_libs_20260401/<span class="pp">*</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> <span class="va">$ILAFORES</span>/R_libs_20260401/<span class="pp">*</span> ~/R/x86_64-pc-linux-gnu-library/4.4</span></code></pre></div>
 <p>Then, load R and activate it.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">module</span> load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">nice</span> R</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="ex">module</span> load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">nice</span> R</span></code></pre></div>
 <div class="callout-ip34">
 <p>The cool thing about ip34 is that there are 96 cores available. So
 whenever the function you run has a <code>threads</code> or
@@ -2066,9 +2067,9 @@ computer. By default, your current directory will be the one you were in
 when you activated R.
 </details>
 </div>
-<div id="making-stuff-run-in-the-background" class="section level2" number="5.2">
-<h2><span class="header-section-number">5.2</span> Making stuff run in
-the background</h2>
+<div id="running-stuff-in-the-background-with-tmux" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Running stuff in the
+background with <code>tmux</code></h2>
 <p>Imagine you want to run DADA2’s sample inference on hundreds of
 samples… that might take a while! If you want to go home and let it run
 while you binge-watch Friends, you can either let your laptop running
@@ -2078,7 +2079,7 @@ the background. If you close your ip34 session (or just log out), it
 keeps running. Within that tmux shell, you can run anything like you
 would on your normal shell. To get it running, log in to ip34, get where
 you need to be, then run:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="ex">tmux</span> new <span class="at">-s</span> your_session_name</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">tmux</span> new <span class="at">-s</span> your_session_name</span></code></pre></div>
 <p>The text will disappear on your shell and a green line will appear at
 the bottom. That’s it, you are in a tmux session! You can do anything
 you would normally have, like load your R environment and execute some
@@ -2089,9 +2090,9 @@ tmux from within a tmux session, and here we use <code>D</code>, which
 means to Detach from the tmux session. You’ll be back to where you were
 before creating the tmux session. You can check open sessions by
 doing</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">tmux</span> ls</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">tmux</span> ls</span></code></pre></div>
 <p>You can reattach to a session using its name:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">tmux</span> attach <span class="at">-t</span> your_session_name</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="ex">tmux</span> attach <span class="at">-t</span> your_session_name</span></code></pre></div>
 <p>And you’ll see your code is still running.</p>
 <div class="callout-note">
 <p>To learn more about tmux (like how to see multiple sessions
@@ -2117,7 +2118,7 @@ ip34</h2>
 <p>First, you need the full path to the file or folder you want to
 download. In your ip34 session, navigate to the relevant directory and
 run:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="bu">echo</span> <span class="va">$PWD</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="bu">echo</span> <span class="va">$PWD</span></span></code></pre></div>
 <p>This prints the absolute path to your current directory, e.g.:</p>
 <pre><code>/jbod2/def-ilafores/analysis/2026_MyProject/output_plots</code></pre>
 <div class="callout-danger">
@@ -2135,7 +2136,7 @@ Downloading your files</h2>
 <p>This part needs to be done from a local shell, meaning a new shell
 that’s not connected to ip34.</p>
 <p>Generally, it looks like this (example with <code>scp</code>)</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination</span></code></pre></div>
 <ul>
 <li><code>-r</code> copies directories recursively, so you don’t have to
 point to individual files; you can copy the entire output directory and
@@ -2152,14 +2153,14 @@ including 2FA if applicable.</p>
 <div id="on-a-mac-1" class="section level3" number="6.2.1">
 <h3><span class="header-section-number">6.2.1</span> On a Mac</h3>
 <p>Open a new Terminal window and run:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-avr</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-avr</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/</span></code></pre></div>
 <p><code>rsync</code> is available natively on Mac and will sync only
 files that have changed, making repeated transfers much faster.</p>
 </div>
 <div id="on-windows-1" class="section level3" number="6.2.2">
 <h3><span class="header-section-number">6.2.2</span> On Windows</h3>
 <p>Open a new PowerShell window and run:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:<span class="dt">\U</span>sers<span class="dt">\Y</span>ourName<span class="dt">\D</span>ocuments<span class="dt">\m</span>y_project<span class="dt">\</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">scp</span> <span class="at">-r</span> username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:<span class="dt">\U</span>sers<span class="dt">\Y</span>ourName<span class="dt">\D</span>ocuments<span class="dt">\m</span>y_project<span class="dt">\</span></span></code></pre></div>
 <div class="callout-note">
 <p><strong>Tip:</strong> To find the full path of a destination folder
 on Windows, right-click the folder, select <strong>Properties</strong>,
