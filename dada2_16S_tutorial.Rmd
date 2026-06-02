@@ -573,9 +573,10 @@ For 16S, `dada2::assignTaxonomy()` is acceptable, but still consider using `DECI
 
 With assignTaxonomy(), you can use ready-compiled classifiers [here](https://zenodo.org/records/4587955). Download the appropriate files (including species assignment if you want this, but don't expect much with short reads 16S). 
 
-To download it directly onto ip34, you need the download link, which you can get by right-clicking the appropriate file link (here we want `silva_nr99_v138.1_train_set.fa.gz`) in the [repository](https://zenodo.org/records/4587955) and clicking "Copy link address". 
+To download it directly onto ip34, you need the download link, which you can get by right-clicking the appropriate file link in the [repository](https://zenodo.org/records/4587955) and clicking "Copy link address". We want the training set to Genus (e.g. silva_nr99_v138.2_toGenus_trainset.fa.gz), because Species is usually very incomplete with short reads 16S.
  
 Here's how to do it from R directly:
+
 ```{r}
 ref_db_path <- file.path(path_data, 'ref_taxonomy')
 dir.create(ref_db_path)
@@ -588,7 +589,6 @@ system(paste(
 
 # check the filename:
 list.files(ref_db_path)
-
 ```
 
 <div class="callout-danger">
@@ -601,9 +601,10 @@ silva_train  <- file.path(ref_db_path, "silva_nr99_v138.2_toGenus_trainset.fa.gz
 
 # Genus-level classification
 taxonomy <- assignTaxonomy(
-  seqtab.filt, silva_train,
+  seqtab.filt, 
+  silva_train,
   tryRC = TRUE, 
-  multithread = ncores, # don't use more than 24
+  multithread = ncores, # don't use more than 24, it hurts the performance
   verbose = TRUE
 )
 ```

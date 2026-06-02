@@ -2506,9 +2506,10 @@ still consider using <code>DECIPHER::IdTaxa()</code>.</p>
 appropriate files (including species assignment if you want this, but
 don’t expect much with short reads 16S).</p>
 <p>To download it directly onto ip34, you need the download link, which
-you can get by right-clicking the appropriate file link (here we want
-<code>silva_nr99_v138.1_train_set.fa.gz</code>) in the <a href="https://zenodo.org/records/4587955">repository</a> and clicking
-“Copy link address”.</p>
+you can get by right-clicking the appropriate file link in the <a href="https://zenodo.org/records/4587955">repository</a> and clicking
+“Copy link address”. We want the training set to Genus
+(e.g. silva_nr99_v138.2_toGenus_trainset.fa.gz), because Species is
+usually very incomplete with short reads 16S.</p>
 <p>Here’s how to do it from R directly:</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>ref_db_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&#39;ref_taxonomy&#39;</span>)</span>
 <span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">dir.create</span>(ref_db_path)</span>
@@ -2531,11 +2532,12 @@ file ends in <code>.fa.gz</code>.</p>
 <span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a></span>
 <span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="co"># Genus-level classification</span></span>
 <span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">assignTaxonomy</span>(</span>
-<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>  seqtab.filt, silva_train,</span>
-<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>  <span class="at">tryRC =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>  <span class="at">multithread =</span> ncores, <span class="co"># don&#39;t use more than 24</span></span>
-<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
-<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>  seqtab.filt, </span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>  silva_train,</span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>  <span class="at">tryRC =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a>  <span class="at">multithread =</span> ncores, <span class="co"># don&#39;t use more than 24, it hurts the performance</span></span>
+<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span></span>
+<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <div id="decipher" class="section level2" number="9.2">
 <h2><span class="header-section-number">9.2</span> DECIPHER</h2>
