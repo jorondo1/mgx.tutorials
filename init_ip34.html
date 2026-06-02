@@ -1949,8 +1949,9 @@ __________|_______________________________|_________|_________|_________________
 <p>When you see <code>&gt;</code>at the bottom, that means Mammouth is
 ready to receive commands.</p>
 <div class="callout-danger">
-<p><strong>Next, you must</strong> execute the following command,
-<strong>EVERY TIME</strong> you log in.</p>
+<p><strong>Important: you must</strong> execute the following command,
+<strong>EVERY TIME</strong> you log on to Mammoth (or any other CCS
+computer for that matter):</p>
 </div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
 <p>Otherwise, any file you create will only be readable and writable by
@@ -1976,8 +1977,11 @@ every time you login.
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># Create a $ILAFORES variable:</span></span>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="bu">echo</span> export ILAFORES=/jbod2/def-ilafores <span class="op">&gt;&gt;</span> ~/.bashrc</span>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># add a little reminder ...</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="bu">echo</span> echo <span class="st">&quot;Don&#39;t forget to change your group id before working! newgrp def-&lt;your-PI-group-name&gt;&quot;</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co"># Execute the .bashrc (happens every time you log in, but we need those variables now!)</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="bu">.</span> ~/.bashrc </span></code></pre></div>
 <div class="callout-note">
 <p>Each command with <code>&gt;&gt;</code> appends something to the
 <code>.bashrc</code> file. If you do them multiple times, you’ll be

@@ -134,12 +134,13 @@ __________|_______________________________|_________|_________|_________________
 When you see `>`at the bottom, that means Mammouth is ready to receive commands.
 
 <div class="callout-danger">
-**Next, you must** execute the following command, **EVERY TIME** you log in.
+**Important: you must** execute the following command, **EVERY TIME** you log on to Mammoth (or any other CCS computer for that matter):
 </div>
 
 ```bash
 newgrp def-ilafores
 ```
+
 Otherwise, any file you create will only be readable and writable by you. Do not add the newgrp command to your bashrc, tempting as it may be.
 
 ---
@@ -161,6 +162,9 @@ echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc
 
 # Create a $ILAFORES variable:
 echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
+
+# add a little reminder ...
+echo echo "Don't forget to change your group id before working! newgrp def-<your-PI-group-name>"
 
 # Execute the .bashrc (happens every time you log in, but we need those variables now!)
 . ~/.bashrc 
