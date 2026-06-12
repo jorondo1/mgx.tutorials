@@ -612,7 +612,39 @@ taxonomy <- assignTaxonomy(
 
 ## DECIPHER
 
-Decipher also has pre-trained classifiers you can download [here](https://decipher.codes/Downloads.html). Note that the SILVA training set is not restricted to bacteria. It shouldn't matter as long as your primers are specific, but some ASVs are assigned to non-bacterial species, remember to remove them afterwards. 
+Decipher also has pre-trained classifiers you can download [here](https://decipher.codes/Downloads.html). Note that the SILVA training set is not restricted to bacteria. It shouldn't matter as long as your primers are specific, but some ASVs are assigned to non-bacterial species, remember to remove them afterwards.
+
+<div class="callout-ip34">
+**Command-line downloads are a bit trickier because of how the DECIPHER training sets are stored on their website.**
+
+1. Choose your reference database (e.g. UNITE for ITS) and click it
+2. This will open a Google drive web page. **Click the blue Download button.** This will open yet another page, saying that `Google Drive can't scan this file for viruses.` If working locally on your computer, you can download this directly. On a remote server, however, we need the actual download link.
+4. Click `Download anyway`,but cancel the download (or not, but you won't need this file)
+5. Right click on white space within the web page and select `Inspect`. A panel will appear on the left
+6. In that panel, click the `Network` tab at the top
+7. You will see a Name column with a string that looks like `download?id=` followed by alphanumeric characters. Right-click that string and select `Copy > Copy URL`
+8. In your R terminal on ip34, execute the following commands (need to be adapted to your database):
+
+
+```{r}
+ref_db_path <- file.path(path_data, 'ref_taxonomy')
+dir.create(ref_db_path)
+
+# This calls the bash command "wget" which downloads files from a url:
+system(paste(
+  'wget -O',
+  # name it appropriately, the file should end with .RData:
+  file.path(ref_db_path, "UNITE_v2025.RData"), 
+  # then REPLACE this path with the adress you copied!
+  '"https://drive.usercontent..."')) 
+
+# check the filename:
+list.files(ref_db_path)
+```
+
+Make sure you make the appropriate modifications to the `system()` command above (see inline comments). Notice the double-quotes within single-quotes wrapped around the URL; these are essential.
+
+</div>
 
 <details>
 <summary>
