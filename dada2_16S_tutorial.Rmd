@@ -612,6 +612,10 @@ taxonomy <- assignTaxonomy(
 
 ## DECIPHER
 
+```{r}
+install.packages("DECIPHER")
+```
+
 Decipher also has pre-trained classifiers you can download [here](https://decipher.codes/Downloads.html). Note that the SILVA training set is not restricted to bacteria. It shouldn't matter as long as your primers are specific, but some ASVs are assigned to non-bacterial species, remember to remove them afterwards.
 
 <div class="callout-ip34">
@@ -666,11 +670,11 @@ Then, use the training set to do the assignment:
 ```{r}
 # Extract ASVs
 dna <- DNAStringSet(getSequences(seqtab.filt)) 
-
+load(ref_db_path)
 # Determine taxonomy
 ids <- IdTaxa(
   test = dna,
-  trainingSet = ref_db_path,
+  trainingSet = trainingSet,
   strand = "both", 
   processors = ncores,
   verbose=TRUE)
