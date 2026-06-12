@@ -617,12 +617,18 @@ Decipher also has pre-trained classifiers you can download [here](https://deciph
 <div class="callout-ip34">
 **Command-line downloads are a bit trickier because of how the DECIPHER training sets are stored on their website.**
 
+Here's a few links I got for you, but these might not be the latest available databases. To use these, right-click and 
+
+[UNITE v2025 for ITS](https://drive.usercontent.google.com/download?id=1wFob94wNna6RAdYeQudoMJILXPELxWPM&export=download&authuser=0&confirm=t&uuid=fbd67f4d-69b1-4448-af76-d1daafdfdbab&at=AAINaII7Lu2hYh3OElhhu5Mc0z4V%3A1781275116620)
+
+[SILVA SSU r138.2 for 16S](https://drive.usercontent.google.com/download?id=1w3wdSCpSihntWkbP_zvXz7r3s-tNB8DV&export=download&authuser=0&confirm=t&uuid=efdb9aff-d94f-4512-8e1e-b5c373eb2599&at=AAINaIJMVufIpLS721zm40VLjSYU%3A1781277177367)
+
 1. Choose your reference database (e.g. UNITE for ITS) and click it
 2. This will open a Google drive web page. **Click the blue Download button.** This will open yet another page, saying that `Google Drive can't scan this file for viruses.` If working locally on your computer, you can download this directly. On a remote server, however, we need the actual download link.
-4. Click `Download anyway`,but cancel the download (or not, but you won't need this file)
-5. Right click on white space within the web page and select `Inspect`. A panel will appear on the left
-6. In that panel, click the `Network` tab at the top
-7. You will see a Name column with a string that looks like `download?id=` followed by alphanumeric characters. Right-click that string and select `Copy > Copy URL`
+4. Right click on white space within the web page and select `Inspect`. A panel will appear on the left
+5. In that panel, click the `Network` tab at the top
+6. Click `Download anyway` in the webpage, but cancel the download (or not, but you won't need this file)
+7. You will see an element appear in the Name column of the side panel, with a string starting with `download?id=` followed by alphanumeric characters. Right-click that string and select `Copy > Copy URL`
 8. In your R terminal on ip34, execute the following commands (need to be adapted to your database):
 
 
