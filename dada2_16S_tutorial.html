@@ -2553,15 +2553,15 @@ non-bacterial species, remember to remove them afterwards.</p>
 DECIPHER training sets are stored on their website.</strong></p>
 <p>Here’s a few popular links, but these might not be the latest
 available training sets To use these, right-click and select
-<code>Copy link address</code>, then use it to build the command
-below.</p>
+<code>Copy link address</code></p>
 <p>For ITS: <a href="https://drive.usercontent.google.com/download?id=1wFob94wNna6RAdYeQudoMJILXPELxWPM&amp;export=download&amp;authuser=0&amp;confirm=t&amp;uuid=fbd67f4d-69b1-4448-af76-d1daafdfdbab&amp;at=AAINaII7Lu2hYh3OElhhu5Mc0z4V%3A1781275116620">UNITE
 v2025</a></p>
 <p>For 16S: <a href="https://drive.usercontent.google.com/download?id=1w3wdSCpSihntWkbP_zvXz7r3s-tNB8DV&amp;export=download&amp;authuser=0&amp;confirm=t&amp;uuid=efdb9aff-d94f-4512-8e1e-b5c373eb2599&amp;at=AAINaIJMVufIpLS721zm40VLjSYU%3A1781277177367">SILVA
 SSU r138.2</a></p>
+<p>Then use it to build the R command below.</p>
 <details>
 <summary>
-To donwload a more recent or different training set, click here.
+To download a more recent or different training set, click here.
 </summary>
 <ol style="list-style-type: decimal">
 <li>Go to <a href="https://decipher.codes/Downloads.html" class="uri">https://decipher.codes/Downloads.html</a> and click the link
@@ -2583,19 +2583,21 @@ alphanumeric characters. Right-click that string and select
 <li>Paste this URL in the R command below (see comments)</li>
 </ol>
 </details>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>ref_db_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&#39;ref_taxonomy&#39;</span>)</span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">dir.create</span>(ref_db_path)</span>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>ref_db_dir <span class="ot">&lt;-</span> <span class="fu">file.path</span>(path_data, <span class="st">&#39;ref_taxonomy&#39;</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">dir.create</span>(ref_db_dir)</span>
 <span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a></span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="co"># This calls the bash command &quot;wget&quot; which downloads files from a url:</span></span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">system</span>(<span class="fu">paste</span>(</span>
-<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a>  <span class="st">&#39;wget -O&#39;</span>,</span>
-<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a>  <span class="co"># name it appropriately, the file should end with .RData:</span></span>
-<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a>  <span class="fu">file.path</span>(ref_db_path, <span class="st">&quot;UNITE_v2025.RData&quot;</span>), </span>
-<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a>  <span class="co"># then REPLACE this path with the address you copied!</span></span>
-<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a>  <span class="st">&#39;&quot;https://drive.usercontent...&quot;&#39;</span>)) </span>
-<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a></span>
-<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a><span class="co"># check the filename:</span></span>
-<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a><span class="fu">list.files</span>(ref_db_path)</span></code></pre></div>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="co"># name the file appropriately, ending with .RData , for example:</span></span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a>ref_db_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(ref_db_dir, <span class="st">&quot;UNITE_v2025.RData&quot;</span>)</span>
+<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a><span class="co"># This calls the bash command &quot;wget&quot; which downloads files from a url:</span></span>
+<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a><span class="fu">system</span>(<span class="fu">paste</span>(</span>
+<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a>  <span class="st">&#39;wget -O&#39;</span>,</span>
+<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a>  ref_db_path, </span>
+<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a>  <span class="co"># then REPLACE this path with the address you copied!</span></span>
+<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a>  <span class="st">&#39;&quot;https://drive.usercontent...&quot;&#39;</span>)) </span>
+<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a></span>
+<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a><span class="co"># check the filename:</span></span>
+<span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a><span class="fu">list.files</span>(ref_db_dir)</span></code></pre></div>
 <p>Make sure you make the appropriate modifications to the
 <code>system()</code> command above (see inline comments). Notice the
 double-quotes within single-quotes wrapped around the URL; these are
@@ -2605,16 +2607,13 @@ essential.</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Extract ASVs</span></span>
 <span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>dna <span class="ot">&lt;-</span> <span class="fu">DNAStringSet</span>(<span class="fu">getSequences</span>(seqtab.filt)) </span>
 <span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a></span>
-<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="co"># Load the DECIPHER training set:</span></span>
-<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a>silva_train <span class="ot">&lt;-</span> <span class="st">&#39;data/ref_dbs/SILVA_SSU_r138_2_2024.RData&#39;</span></span>
-<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a></span>
-<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="co"># Determine taxonomy</span></span>
-<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>ids <span class="ot">&lt;-</span> <span class="fu">IdTaxa</span>(</span>
-<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a>  <span class="at">test =</span> dna,</span>
-<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a>  <span class="at">trainingSet =</span> silva_train,</span>
-<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a>  <span class="at">strand =</span> <span class="st">&quot;both&quot;</span>, </span>
-<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a>  <span class="at">processors =</span> ncores,</span>
-<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a>  <span class="at">verbose=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="co"># Determine taxonomy</span></span>
+<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a>ids <span class="ot">&lt;-</span> <span class="fu">IdTaxa</span>(</span>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a>  <span class="at">test =</span> dna,</span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a>  <span class="at">trainingSet =</span> ref_db_path,</span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>  <span class="at">strand =</span> <span class="st">&quot;both&quot;</span>, </span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a>  <span class="at">processors =</span> ncores,</span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a>  <span class="at">verbose=</span><span class="cn">TRUE</span>)</span></code></pre></div>
 <p>Finally, format the assignments for DADA2.</p>
 <details>
 <summary>

@@ -617,15 +617,17 @@ Decipher also has pre-trained classifiers you can download [here](https://deciph
 <div class="callout-ip34">
 **Command-line downloads are a bit trickier because of how the DECIPHER training sets are stored on their website.**
 
-Here's a few popular links, but these might not be the latest available training sets To use these, right-click and select `Copy link address`, then use it to build the command below.
+Here's a few popular links, but these might not be the latest available training sets To use these, right-click and select `Copy link address`
 
 For ITS: [UNITE v2025](https://drive.usercontent.google.com/download?id=1wFob94wNna6RAdYeQudoMJILXPELxWPM&export=download&authuser=0&confirm=t&uuid=fbd67f4d-69b1-4448-af76-d1daafdfdbab&at=AAINaII7Lu2hYh3OElhhu5Mc0z4V%3A1781275116620)
 
 For 16S: [SILVA SSU r138.2](https://drive.usercontent.google.com/download?id=1w3wdSCpSihntWkbP_zvXz7r3s-tNB8DV&export=download&authuser=0&confirm=t&uuid=efdb9aff-d94f-4512-8e1e-b5c373eb2599&at=AAINaIJMVufIpLS721zm40VLjSYU%3A1781277177367)
 
+Then use it to build the R command below.
+
 <details>
 <summary>
-To donwload a more recent or different training set, click here.
+To download a more recent or different training set, click here.
 </summary>
 
 1. Go to https://decipher.codes/Downloads.html and click the link to your desired database
@@ -638,19 +640,21 @@ To donwload a more recent or different training set, click here.
 </details>
 
 ```{r}
-ref_db_path <- file.path(path_data, 'ref_taxonomy')
-dir.create(ref_db_path)
+ref_db_dir <- file.path(path_data, 'ref_taxonomy')
+dir.create(ref_db_dir)
+
+# name the file appropriately, ending with .RData , for example:
+ref_db_path <- file.path(ref_db_dir, "UNITE_v2025.RData")
 
 # This calls the bash command "wget" which downloads files from a url:
 system(paste(
   'wget -O',
-  # name it appropriately, the file should end with .RData:
-  file.path(ref_db_path, "UNITE_v2025.RData"), 
+  ref_db_path, 
   # then REPLACE this path with the address you copied!
   '"https://drive.usercontent..."')) 
 
 # check the filename:
-list.files(ref_db_path)
+list.files(ref_db_dir)
 ```
 
 Make sure you make the appropriate modifications to the `system()` command above (see inline comments). Notice the double-quotes within single-quotes wrapped around the URL; these are essential.
@@ -663,13 +667,10 @@ Then, use the training set to do the assignment:
 # Extract ASVs
 dna <- DNAStringSet(getSequences(seqtab.filt)) 
 
-# Load the DECIPHER training set:
-silva_train <- 'data/ref_dbs/SILVA_SSU_r138_2_2024.RData'
-
 # Determine taxonomy
 ids <- IdTaxa(
   test = dna,
-  trainingSet = silva_train,
+  trainingSet = ref_db_path,
   strand = "both", 
   processors = ncores,
   verbose=TRUE)
