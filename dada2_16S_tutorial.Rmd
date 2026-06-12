@@ -635,7 +635,7 @@ system(paste(
   'wget -O',
   # name it appropriately, the file should end with .RData:
   file.path(ref_db_path, "UNITE_v2025.RData"), 
-  # then REPLACE this path with the adress you copied!
+  # then REPLACE this path with the address you copied!
   '"https://drive.usercontent..."')) 
 
 # check the filename:
@@ -646,9 +646,29 @@ Make sure you make the appropriate modifications to the `system()` command above
 
 </div>
 
+Then, use the training set to do the assignment:
+
+```{r}
+# Extract ASVs
+dna <- DNAStringSet(getSequences(seqtab.filt)) 
+
+# Load the DECIPHER training set:
+silva_train <- 'data/ref_dbs/SILVA_SSU_r138_2_2024.RData'
+
+# Determine taxonomy
+ids <- IdTaxa(
+  test = dna,
+  trainingSet = silva_train,
+  strand = "both", 
+  processors = ncores,
+  verbose=TRUE)
+```
+
+Finally, format the assignments for DADA2.
+
 <details>
 <summary>
-Load this custom function
+Load this custom function first!
 </summary>
 Adapted from https://benjjneb.github.io/dada2/tutorial.html ; simply copy-paste this and execute it into your code. This function will eventually be added to the `mgx.tools` package.
 
@@ -688,20 +708,6 @@ format_DECIPHER_for_dada2 <- function(ids, seqtab, ranks = NULL) {
 </details>
 
 ```{r}
-# Extract ASVs
-dna <- DNAStringSet(getSequences(seqtab.filt)) 
-
-# Load the DECIPHER training set:
-silva_train <- 'data/ref_dbs/SILVA_SSU_r138_2_2024.RData'
-
-# Determine taxonomy
-ids <- IdTaxa(
-  test = dna,
-  trainingSet = silva_train,
-  strand = "both", 
-  processors = ncores,
-  verbose=TRUE) 
-
 # Build dada2-formatted taxonomy table (see function above)
 taxonomy <- format_DECIPHER_for_dada2(
   ids, seqtab.filt,
