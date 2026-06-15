@@ -43,9 +43,17 @@ If this is your first time using R on ip34, first follow the [ip34 setup instruc
 
 It is highly recommended to work in a tmux session, because certain processes can take long execution times if you have many samples. tmux sessions are explained in the ip34 setup instructions.
 
+Make sure you are located within a project directory that is accessible to your collaborators, e.g. for a project named TheProjectName:
+```{bash ip34 dir}
+mkdir /jbod2/def-ilafores/analysis/TheProjectName # if not already created
+cd /jbod2/def-ilafores/analysis/TheProjectName    # go into it
+```
+
+If needed, create subfolders in which to download your sequences, which here we named `0_raw`.
+
 Then, load the R environment and dependencies:
 
-```{bash ip34}
+```{bash ip34 module}
 module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
 ```
 
