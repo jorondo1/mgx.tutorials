@@ -12,7 +12,7 @@ output:
     theme: flatly
     highlight: tango
     number_sections: true
-    css: dada2_16S_tutorial.css
+    css: mgx.tutorials.css
 ---
 
 <div class="callout-note">
@@ -688,52 +688,9 @@ ids <- IdTaxa(
   verbose=TRUE)
 ```
 
-Finally, format the assignments for DADA2.
-
-<details>
-<summary>
-Load this custom function first!
-</summary>
-Adapted from https://benjjneb.github.io/dada2/tutorial.html ; simply copy-paste this and execute it into your code. This function will eventually be added to the `mgx.tools` package.
-
-```{r}
-format_DECIPHER_for_dada2 <- function(ids, seqtab, ranks = NULL) {
-  
-  # If ranks not provided, extract them from the IdTaxa results
-  if (is.null(ranks)) {
-    # Get all unique ranks from the classifications
-    all_ranks <- unique(unlist(lapply(ids, function(x) x$rank)))
-    # Remove "Root" and sort by typical hierarchy
-    ranks <- all_ranks[all_ranks != "Root"]
-    message("Detected ranks: ", paste(ranks, collapse = ", "))
-  }
-  
-  # Convert the output object of class "Taxa" to a matrix 
-  # analogous to the output from assignTaxonomy
-  taxid <- t(sapply(ids, function(x) {
-    m <- match(ranks, x$rank)
-    taxa <- x$taxon[m]
-    taxa[startsWith(taxa, "unclassified_")] <- NA
-    taxa
-  }))
-  
-  colnames(taxid) <- ranks
-  rownames(taxid) <- getSequences(seqtab)
-  
-  perc_NA <- round(
-    100 * sum(is.na(taxid)) / (nrow(taxid) * ncol(taxid)),
-    2)
-  
-  message(paste(perc_NA, '% of NAs'))
-  
-  return(taxid)
-}
-```
-</details>
-
 ```{r}
 # Build dada2-formatted taxonomy table (see function above)
-taxonomy <- format_DECIPHER_for_dada2(
+taxonomy <- mgx.tools::format_DECIPHER_for_dada2(
   ids, seqtab.filt,
   ranks =  c('rootrank', 'kingdom', 'phylum', 'class', 'order', 'family', 'genus')
 )

@@ -12,7 +12,7 @@ output:
     theme: flatly
     highlight: tango
     number_sections: true
-    css: dada2_16S_tutorial.css
+    css: mgx.tutorials.css
 ---
 
 ```{r, echo = FALSE}
