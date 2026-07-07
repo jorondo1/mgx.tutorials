@@ -39,7 +39,7 @@ Choose the right tab depending on whether you want to setup to run locally on yo
 
 ## ip34/Mammoth
 
-If this is your first time using R on ip34, first follow the [ip34 setup instructions](https://github.com/jorondo1/misc_scripts/blob/main/init_ip34.md). 
+If this is your first time using R on ip34, first follow the [ip34 setup instructions](https://jorondo1.github.io/mgx.tutorials/init_ip34.html). 
 
 It is highly recommended to work in a tmux session, because certain processes can take long execution times if you have many samples. tmux sessions are explained in the ip34 setup instructions.
 
@@ -96,7 +96,11 @@ Windows cannot handle multiple cores; execute the appropriate command. On Mac, t
  
 ## Install/load packages
 
-Install these packages if you don't already have them (if unsure, you can check each by using trying to load them, e.g. `library("devtools")`).
+<details>
+<summary>
+Install these packages if you don't already have them... 
+</summary>
+(if unsure, you can check each by using trying to load them, e.g. `library("devtools")`).
 
 ```{r, eval = FALSE}
 install.packages(c("devtools","BiocManager", "tidyverse"))
@@ -104,11 +108,25 @@ library(devtools)
 library(BiocManager)
 BiocManager::install(c("Biostrings", "ShortRead"))
 devtools::install_github(c("trinker/pacman", "jorondo1/mgx.tools"))
+install.packages('pak')
 ```
 
 <div class="callout-note">
 Packages only need to be _installed_ once per machine/environment. Next, we load them; this needs to be done every time you open a new R session! Read more about package installation vs. loading [here.](https://www.dataquest.io/blog/install-package-r/)
 </div>
+
+If some mgx.tools functions don't work properly, reinstall the latest version like this:
+
+```{r}
+pak::pkg_install("jorondo1/mgx.tools?reinstall", upgrade = TRUE) 
+q()
+```
+
+WARNING: this will quit your R session; open a new one and start over.
+
+</details>
+
+Then load the required packages:
 
 ```{r env}
 library(pacman)
@@ -117,7 +135,7 @@ p_load(dada2, tidyverse, mgx.tools, Biostrings, ShortRead, parallel, update = FA
 
 ## Environment variables
 
-Define your primers (edit for your amplicon):
+Define your primers (edit for your amplicon, this is an example!):
 ```{r config}
 FWD <- "AACMGGATTAGATACCCKG"  # 799F
 REV <- "AGGGTTGCGCTCGTTG"     # 1115R
