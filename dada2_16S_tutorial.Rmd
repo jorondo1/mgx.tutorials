@@ -479,13 +479,16 @@ These are two rows: first row is the length of the amplicon, and second row is i
 ```{r length-filter2}
 # Subset within target range:
 seqtab2 <- seqtab[, nchar(colnames(seqtab)) %in% 290:310] # <- change this if necessary
+(sum(seqtab2)-sum(seqtab))/sum(seqtab)
 ```
+
+This last proportion is the proportion of _reads_ lost through that filtering. It's okay to remove lots of ASVs if they don't represent a lot of reads; they are probably sequencing errors or PCR chimeras.
 
 For variable-length amplicons, you can skip this step by running
 ```{r}
 seqtab2 <- seqtab
 ```
-or simply increase the range to plausible values.
+or simply increase the range to plausible values. In any case, at this point in the pipeline, it's better to keep more useless ASVs than remove potentially biologically significant ones.
 
 ## Remove chimeras
 

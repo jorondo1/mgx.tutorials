@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jonathan Rondeau-Leclaire" />
 
-<meta name="date" content="2026-07-07" />
+<meta name="date" content="2026-07-10" />
 
 <title>DADA2 - 16S rRNA Processing Tutorial</title>
 
@@ -1832,7 +1832,7 @@ font-size: 0.95em;
 
 <h1 class="title toc-ignore">DADA2 - 16S rRNA Processing Tutorial</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire</h4>
-<h4 class="date">2026-07-07</h4>
+<h4 class="date">2026-07-10</h4>
 
 </div>
 
@@ -2351,10 +2351,16 @@ ITS amplicons might require a much broader range, because the ITS gene
 is very variable in length. The idea is just to remove outliers and/or
 unexpectedly small/long amplicons</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Subset within target range:</span></span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>] <span class="co"># &lt;- change this if necessary</span></span></code></pre></div>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab[, <span class="fu">nchar</span>(<span class="fu">colnames</span>(seqtab)) <span class="sc">%in%</span> <span class="dv">290</span><span class="sc">:</span><span class="dv">310</span>] <span class="co"># &lt;- change this if necessary</span></span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>(<span class="fu">sum</span>(seqtab2)<span class="sc">-</span><span class="fu">sum</span>(seqtab))<span class="sc">/</span><span class="fu">sum</span>(seqtab)</span></code></pre></div>
+<p>This last proportion is the proportion of <em>reads</em> lost through
+that filtering. It’s okay to remove lots of ASVs if they don’t represent
+a lot of reads; they are probably sequencing errors or PCR chimeras.</p>
 <p>For variable-length amplicons, you can skip this step by running</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a>seqtab2 <span class="ot">&lt;-</span> seqtab</span></code></pre></div>
-<p>or simply increase the range to plausible values.</p>
+<p>or simply increase the range to plausible values. In any case, at
+this point in the pipeline, it’s better to keep more useless ASVs than
+remove potentially biologically significant ones.</p>
 </div>
 <div id="remove-chimeras" class="section level2" number="7.3">
 <h2><span class="header-section-number">7.3</span> Remove chimeras</h2>
