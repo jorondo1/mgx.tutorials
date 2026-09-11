@@ -99,6 +99,15 @@ relab_df <- melted_ps %>%
   
   # only keep non-zero rows:
   filter(relAb>0)
+```
+
+
+One last trick; your taxonomy table may still have `NAs` for ASVs at ranks they are unclassified. Use this little code to replace them with `Unclassified`:
+```{r manage-NAs}
+
+# Replace NAs with "Unclassified" throughout:
+relab_df <- relab_df %>% 
+  mutate(replace(Genus, is.na(Genus), "Unclassified"))
 
 relab_df
 ```
@@ -196,7 +205,7 @@ To make sure you don't miss it, use  `position = "stack"` (the default for `geom
 
 ## Alpha diversity
 
-Alpha diversity is diversity *within* a sample: how many taxa there are, and how evenly they're distributed. We'll use the Shannon index, a very commonly reported index, and compare it across seasons, within each city.
+Alpha diversity is diversity *within* a sample: how many ASVs there are, and how evenly they're distributed. We'll use the Shannon index, a very commonly reported index in microbiome research, and compare it across seasons, within each city.
 
 ### Rarefy, then compute Shannon diversity
 
