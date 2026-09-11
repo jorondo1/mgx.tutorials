@@ -1,0 +1,423 @@
+---
+title: "Simulation-Based Calibration (SBC), Block by Block"
+author: "100% Claude Code"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 2
+    theme: flatly
+    highlight: tango
+    number_sections: true
+    css: mgx.tutorials.css
+---
+
+<div class="callout-note">
+**About this tutorial**
+Simulation-Based Calibration (SBC) answers one question: *if I hand this model data it can't possibly get wrong (because I generated that data myself, from the model's own priors), does the posterior actually recover the truth, consistently, across many repetitions?* It's the tool for turning "this fit looks a little off sometimes, is that a problem?" from a guess into a checkable claim. We build the harness block by block, using `model_MDC` (partial pooling across Cultivar, from `hiermod_lognormal.R`) as the running example.
+
+This tutorial is self-contained: it only needs `hiermod_utils.R` for the generic pieces (scale conversions, the back-transform helper, the `run_sbc()`/`summarize_sbc()` harness). Everything model-specific -- `model_MDC` itself, its simulator, its back-transform wrapper -- is defined right here, copied from `hiermod_lognormal.R` for reference, and the "observed" dataset is synthesized rather than loaded from the real project data. Nothing below depends on sourcing the production script or having its data file on disk. The point is to learn the SBC procedure itself; once it clicks, applying it to any other model in that file (or elsewhere) is a matter of rewriting Blocks A-D for that model's own structure.
+</div>
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+klippy::klippy(c('r'), color = 'lightblue', tooltip_message = 'Click to copy', position = c('top', 'right'), tooltip_success = 'Done')
+```
+
+# Setup
+
+```{r env}
+library(pacman)
+p_load(rethinking, tidyverse)
+
+source('~/Repos/orchardPhyllosphere2/src/hiermod/utils/hiermod_utils.R')
+```
+
+That's the only dependency on the rest of the project. `hiermod_utils.R` supplies `loga_to_mean()`/`sigma_to_cv()` (scale conversions), `lognormal_mean()` (the back-transform), `report_postcount_stats()`, and the generic `run_sbc()`/`summarize_sbc()` harness. Everything with `model_MDC` in its name gets (re)defined below, so this tutorial runs top to bottom on its own.
+
+---
+
+# Why "it looks fine sometimes" isn't good enough
+
+This question was first raised by `model_MDLb` (partial pooling across Location), a close sibling of `model_MDC` in the same file. Its parameter-recovery step, summarized:
+
+```
+> summary(post_counts_MDLb_sim)
+     mean1               mean2              contrast
+ Min.   :1.547e+00   Min.   :     2.57   Min.   :1.014e+00
+ 1st Qu.:5.971e+00   1st Qu.:    10.38   1st Qu.:4.241e+00
+ Median :7.431e+00   Median :    13.02   Median :5.538e+00
+ Mean   :2.764e+01   Mean   :    45.27   Mean   :1.764e+01
+ 3rd Qu.:9.724e+00   3rd Qu.:    17.04   3rd Qu.:7.491e+00
+ Max.   :2.474e+05   Max.   :403339.62   Max.   :1.559e+05
+```
+
+Median contrast around `5.5` -- perfectly reasonable for a Hill number. But the mean is `17.6`, and the max is `155,900`: a small fraction of posterior draws imply a contrast so large it corresponds to a straight, near-vertical slope down from `Hill = 0`, not a bump anywhere near the data. Re-run the parameter-recovery fit and sometimes this tail is barely there; sometimes it's this bad.
+
+`model_MDC` -- this tutorial's running example -- shares the exact same risk profile. It has its own `dexp(2)`-prior pooling-strength parameter (`sigma_cult` in place of `sigma_loc`), it back-transforms through the same exponentially-amplifying `lognormal_mean()`, and per the `TODO` markers still sitting in `hiermod_lognormal.R`'s MODEL 4 section, it has never actually had this check run on it. That combination -- same failure mode as a model that's already shown it, zero calibration evidence either way -- makes it the natural model to build the harness for.
+
+There are two very different explanations for this pattern, and a single `summary()` can't tell them apart:
+
+1. **The prior is doing exactly what it was told to do.** `sigma[Mg] ~ dexp(2)` and `sigma_cult ~ dexp(2)` still put real probability on largish values, and `E[D] = exp(mu + σ²/2)` amplifies those *exponentially* on the way back to the raw scale. A model that's otherwise working correctly will, once in a while, land on a simulated dataset whose implied truth really is extreme -- and a well-behaved posterior should then honestly reflect that extremity, tail and all. That's not a bug; it's the model reporting an uncomfortable truth about its own priors.
+2. **Something is actually broken.** The `b[Cv]*sigma_cult` combination is exactly the kind of non-centered geometry that produces funnels -- this project has already hit that once, in `model_MDLb`'s `b[Lo]*sigma_loc` term. If the sampler is intermittently mishandling that funnel, the posterior it returns isn't a faithful picture of the truth at all -- it's a computational artifact that happens to look like a heavy tail.
+
+Both look identical in a `summary()` of one fit. The only way to tell them apart is to repeat the whole cycle -- draw a truth, simulate data from it, fit, check where the truth landed -- many times, and look at the *pattern* across repetitions. That repeated cycle is SBC.
+
+---
+
+# The idea, with a demo you can actually watch happen
+
+## The theorem, in one sentence
+
+If you draw a parameter `θ_true` from the model's prior, simulate data from `θ_true`, and fit the model to that data, then `θ_true` should be statistically indistinguishable from one more draw out of the resulting posterior. Do this many times, and the **rank** of `θ_true` among the posterior draws -- how many posterior draws fall below it -- should be **uniformly distributed** across repetitions. This is the Cook-Gelman-Rubin / Talts et al. result: it's not an approximation or a rule of thumb, it's a consequence of Bayes' rule holding exactly, so any *systematic* deviation from uniform ranks is proof that something in the prior→simulate→fit→posterior chain isn't matching what you think it is.
+
+## Watching it work, before spending any compute on Stan
+
+This part needs no `ulam()`, no MCMC -- just a model simple enough to have a closed-form posterior, so we can run thousands of SBC replications in under a second and directly see what "calibrated" and "broken" look like.
+
+```{r sbc-toy, eval = TRUE}
+# x_i ~ Normal(theta, 1), theta ~ Normal(0, 1), n observations.
+# Conjugacy gives an exact posterior for theta -- no sampler needed, so we can
+# run thousands of SBC replications instantly and just watch the histogram.
+#
+# post_sd_bug and post_mean_bug let us *inject* specific miscalibrations, so
+# you can see what each failure mode does to the rank histogram before you
+# ever have to diagnose one from a real (much noisier) Stan fit.
+sbc_toy <- function(n_sbc, n_obs = 5, post_sd_bug = 1, post_mean_bug = 0) {
+  ranks <- integer(n_sbc)
+  for (s in seq_len(n_sbc)) {
+    theta_true <- rnorm(1, 0, 1)                       # draw from the prior
+    x <- rnorm(n_obs, theta_true, 1)                   # simulate data from it
+
+    post_var  <- 1 / (1 + n_obs)                       # exact conjugate posterior
+    post_mean <- post_var * sum(x) + post_mean_bug      # (+bug: inject a bias)
+    post_sd   <- sqrt(post_var) * post_sd_bug            # (*bug: inject over/under-confidence)
+
+    post_draws <- rnorm(2000, post_mean, post_sd)
+    ranks[s] <- sum(post_draws < theta_true)            # where did the truth land?
+  }
+  ranks / 2000  # normalize to [0,1] for plotting
+}
+
+set.seed(1)
+toy_results <- bind_rows(
+  tibble(rank = sbc_toy(2000),                     scenario = "Calibrated"),
+  tibble(rank = sbc_toy(2000, post_sd_bug = 0.5),   scenario = "Overconfident (posterior too narrow)"),
+  tibble(rank = sbc_toy(2000, post_sd_bug = 2),     scenario = "Underconfident (posterior too wide)"),
+  tibble(rank = sbc_toy(2000, post_mean_bug = 0.6), scenario = "Biased (posterior off-center)")
+) %>% mutate(scenario = fct_inorder(scenario))
+
+ggplot(toy_results, aes(x = rank)) +
+  geom_histogram(bins = 30, fill = "steelblue", colour = "white") +
+  geom_hline(yintercept = 2000/30, linetype = "dashed", colour = "grey30") +
+  facet_wrap(~scenario) +
+  theme_light() +
+  labs(x = "Rank statistic (rank / S)", y = "Count",
+       title = "Same underlying model, four different posterior-generating rules",
+       subtitle = "Dashed line = what a perfectly uniform histogram looks like")
+```
+
+<div class="callout-note">
+**Reading the four panels**
+
+- **Calibrated**: flat. Every rank is equally likely -- exactly what the theorem predicts when the posterior faithfully represents the model.
+- **Overconfident**: U-shaped, mass piled at 0 and 1. A posterior that's too narrow keeps missing the truth on one side or the other, so the truth is almost always either below nearly everything or above nearly everything.
+- **Underconfident**: peaked in the middle. A posterior that's too wide "hedges" so much the truth is almost always safely inside the bulk, so it never lands near the extreme ranks.
+- **Biased**: sloped. A systematic shift means the truth is more often below (or above) the posterior than it should be.
+</div>
+
+Keep this figure in mind -- it's the same shape you'll be reading off `model_MDC`'s real rank histogram in a moment, just with far more sampling noise per bin.
+
+---
+
+# Building the pieces, for `model_MDC`
+
+`hiermod_utils.R` already has the loop (`run_sbc()`) and the readout (`summarize_sbc()`) -- they're generic across every model. What's genuinely model-specific, and what you have to write yourself each time, is: the model itself, its data-generating function, its back-transform, and four small SBC piece-functions. Here's each one, and why it looks the way it does.
+
+## The model, its simulator, and its back-transform
+
+Copied from `hiermod_lognormal.R`'s MODEL 4 section, unchanged -- kept in sync by hand, same as the note at the top of `hiermod_lognormal_shifted.R` describes for the wrapper-function pattern. If you edit the model in the production script, mirror the edit here.
+
+```{r sbc-model-mdc}
+model_MDC <- alist(
+  Dv ~ dlnorm(mu, sigma[Mg]),
+  mu <- loga[Mg] + b[Cv]*sigma_cult,
+
+  # Priors
+  loga[Mg] ~ dnorm(2,2),
+  b[Cv] ~ dnorm(0,1),
+  sigma[Mg] ~ dexp(2),
+  sigma_cult ~ dexp(2)
+)
+
+# Adds cultivar-level log-scale offsets on top of a plain per-group lognormal.
+sim_div_MDC <- function(Mg, Cv, mean_, cv_, sigma_cult = 0.5){
+  N <- length(Mg)
+  n_cult <- length(unique(Cv))
+  sigma2 <- log(1 + cv_[Mg]^2)
+
+  # Cultivar deviations, log scale:
+  cult_offset <- rnorm(n_cult, 0, sigma_cult)
+  mu <- log(mean_[Mg]) - sigma2/2 + cult_offset[Cv]
+
+  Dv <- rlnorm(N, meanlog = mu, sdlog = sqrt(sigma2))
+  data.frame(Mg, Cv, Dv)
+}
+
+# model_MDC: sigma[Mg] (observation-level) + sigma_cult^2 (Cultivar mean-offset,
+# marginalized over the Cultivar population).
+postcounts_Model4 <- function(fit){
+  post <- extract.samples(fit)
+  total_var1 <- post$sigma[,1]^2 + as.vector(post$sigma_cult)^2
+  total_var2 <- post$sigma[,2]^2 + as.vector(post$sigma_cult)^2
+  post_counts <- data.frame(
+    mean1 = lognormal_mean(post$loga[,1], total_var1),
+    mean2 = lognormal_mean(post$loga[,2], total_var2)
+  ) %>% mutate(contrast = mean2 - mean1)
+
+  report_postcount_stats(post_counts)
+  return(post_counts)
+}
+```
+
+## A stand-in dataset, and a parameter-recovery fit
+
+This tutorial doesn't load the real project data, so `dat_sim` below stands in for it -- same role as the real `div`/`idx$Cv`-derived `dat_MDC` would play in `hiermod_lognormal.R`. Everything about the SBC procedure itself is identical either way; the fit just needs *some* data to have been fit to.
+
+```{r sbc-parameter-recovery}
+set.seed(42)
+dat_sim <- sim_div_MDC(
+  Mg = rbern(250) + 1,
+  Cv = sample(1:5, 250, replace = TRUE),
+  mean_ = c(8, 12),  # a known contrast of 4, on the raw scale
+  cv_ = c(0.5, 1),
+  sigma_cult = 0.6
+)
+
+fit_MDC_sim <- ulam(
+  model_MDC,
+  data = list(Dv = dat_sim$Dv, Mg = dat_sim$Mg, Cv = dat_sim$Cv),
+  chains = 2, cores = 2, iter = 1000,
+  control = list(adapt_delta = 0.99)
+)
+
+post_counts_MDC_sim <- postcounts_Model4(fit_MDC_sim)
+precis(fit_MDC_sim, depth = 2)
+```
+
+That's a single parameter-recovery fit -- exactly the "does the posterior land near the one truth I picked" check you'd normally do before ever thinking about SBC. It's not SBC yet (one repetition tells you nothing about the *rate* of miscalibration), but it conveniently doubles as the compiled `ulam` object Block A needs next.
+
+## Block A -- `draw_true()`: draw a truth from the model's *own* priors
+
+```{r sbc-draw-true}
+n_sbc <- 15  # replications for this run -- see the note on n_sbc sizing below
+
+prior_MDC <- extract.prior(fit_MDC_sim, n = n_sbc)
+
+draw_true_MDC <- function(i) list(
+  loga       = prior_MDC$loga[i, ],
+  sigma      = prior_MDC$sigma[i, ],
+  sigma_cult = prior_MDC$sigma_cult[i]
+)
+```
+
+The instinct here is often to hand-write `rnorm(2, 2, 2)`, `rexp(1, 2)`, etc. to match `model_MDC`'s declared priors. Don't -- that's a second, independent place those priors now live, and the moment you tighten a prior (`dexp(1.5)` to `dexp(2)`, say) and forget to update the hand-written copy, your SBC check silently starts calibrating against a model you're not actually fitting anymore.
+
+`extract.prior()` sidesteps that entirely: it draws straight from whatever `model_MDC`'s `alist()` currently declares, by construction. Reusing `fit_MDC_sim` here is just a convenience -- `extract.prior()` needs a compiled `ulam` object with the right model structure, and the parameter-recovery fit above already is one.
+
+Note that `draw_true_MDC()` doesn't carry `b` (the per-cultivar offsets) forward -- see Block D for why that's fine.
+
+## Block B -- `simulate_data()`: reuse the data-generating function you already wrote
+
+```{r sbc-simulate}
+simulate_MDC <- function(true_params, N_per_group = 125, n_cult = 5){
+  mean_ <- loga_to_mean(true_params$loga, true_params$sigma)
+  cv_   <- sigma_to_cv(true_params$sigma)
+
+  Mg <- rep(1:2, each = N_per_group)
+  Cv <- sample(1:n_cult, length(Mg), replace = TRUE)
+
+  sim_div_MDC(Mg, Cv, mean_ = mean_, cv_ = cv_, sigma_cult = true_params$sigma_cult)
+}
+```
+
+No new simulator to write -- `sim_div_MDC()` already exists above. The only job here is translating `draw_true_MDC()`'s log-scale output (`loga`, `sigma`) into the raw-scale `mean_`/`cv_` arguments the simulator expects, via `loga_to_mean()`/`sigma_to_cv()` -- both in `hiermod_utils.R`, and both exact inverses of the transform `sim_div_MDC()` itself uses internally.
+
+<div class="callout-warning">
+`N_per_group`/`n_cult` default here to the same size as the stand-in dataset above, since there's no real design to defer to in this tutorial. In your own project, default these to the *real* design (the real per-group N, the real number of levels) instead of an arbitrary illustrative size: SBC checks whether the model you're about to trust, fit at the sample size you actually have, is calibrated -- not whether some larger, friendlier hypothetical version of it would be.
+</div>
+
+## Block C -- `to_data_list()`: reshape for `ulam()`
+
+```{r sbc-to-data-list}
+to_data_list_MDC <- function(dat_sim) list(
+  Dv = dat_sim$Dv, Mg = dat_sim$Mg, Cv = dat_sim$Cv
+)
+```
+
+Purely mechanical -- `sim_div_MDC()` returns a data frame, `ulam()` wants a named list. The names have to match what `model_MDC`'s `alist()` references (`Dv`, `Mg`, `Cv`), same rule as building the real fit's data list.
+
+## Block D -- `contrast_fn()`: use *exactly* the back-transform you'll actually report
+
+```{r sbc-contrast}
+contrast_MDC <- function(post, true_params){
+  # Posterior side: identical to postcounts_Model4() above -- same total_var
+  # construction, same lognormal_mean() calls. This has to match, or you're
+  # calibrating a different quantity than the one you'll report.
+  total_var1 <- post$sigma[,1]^2 + as.vector(post$sigma_cult)^2
+  total_var2 <- post$sigma[,2]^2 + as.vector(post$sigma_cult)^2
+  post_contrast <- lognormal_mean(post$loga[,2], total_var2) -
+                    lognormal_mean(post$loga[,1], total_var1)
+
+  # Truth side: same formula, applied to the single true_params draw instead
+  # of a posterior -- loga_to_mean() already folds in the +sigma^2/2 term, so
+  # this is the "if we knew the true parameters, what's the true contrast"
+  # analogue of the posterior calculation above. Note this omits sigma_cult's
+  # contribution to the *true* marginal mean for simplicity (a single draw of
+  # sigma_cult's own random cultivar offsets isn't observed here) -- for a
+  # model this size that's a minor approximation; flag it if you scale this
+  # pattern to a model where the marginalized variance term dominates.
+  mean_true <- loga_to_mean(true_params$loga, true_params$sigma)
+
+  list(post_contrast = post_contrast, true_contrast = mean_true[2] - mean_true[1])
+}
+```
+
+This is the step most tutorials skip, and it's the one most likely to quietly invalidate the whole check: **calibrate the exact derived quantity you're going to report, not just the raw parameters.** `model_MDC`'s raw parameters (`loga`, `sigma`, `sigma_cult`) could be perfectly calibrated on their own while `lognormal_mean()`'s exponential back-transform -- the same one responsible for `model_MDLb`'s `Hill = 500` tail -- introduces its own miscalibration on the way to the number you actually put in a report. If `contrast_fn()` doesn't route through `lognormal_mean()` the same way `postcounts_Model4()` does, a clean rank histogram here would tell you nothing about whether *that* number is trustworthy.
+
+## Block E -- the loop: `run_sbc()`
+
+Already written, generic across every model -- this is what actually lives in `hiermod_utils.R`, shown here only as an annotated sketch (commented out on purpose, so it can't accidentally shadow the real function if you run every chunk in this document top to bottom):
+
+```{r sbc-loop-signature}
+# run_sbc <- function(model, draw_true, simulate_data, to_data_list, contrast_fn,
+#                     n_sbc = 8, iter = 1000, chains = 2, cores = chains, refresh = 0,
+#                     control = NULL){
+#   for each of n_sbc replications:
+#     1. draw_true(i)                  -- Block A
+#     2. simulate_data(true_params)    -- Block B
+#     3. to_data_list(dat_sim)         -- Block C
+#     4. ulam(model, data = dat_list, control = control, ...)  -- actually fit it
+#     5. contrast_fn(post, true_params) -- Block D
+#     6. rank = how many posterior draws fell below the truth
+#   returns one (rank, Ns, true_contrast, n_divergent) per replication
+# }
+```
+
+The one thing to set deliberately here: **`control` should match your real fit's**, or the divergence counts you get back won't mean what you think. If the real `fit_MDC` uses `control = list(adapt_delta = 0.99)` to tame the `sigma[Mg]`/`sigma_cult` funnel, running SBC replications without that same setting would let divergences pile up that have nothing to do with whether the *model* is well-specified, only with using a weaker sampler than the one you actually trust.
+
+## Block F -- the readout: `summarize_sbc()`
+
+```{r sbc-summary-signature}
+# summarize_sbc <- function(sbc_out){
+#   ranks <- rank / Ns for every replication
+#   returns: ks_test (rank uniformity vs. Uniform(0,1)), n_divergent (total), ranks (raw)
+# }
+```
+
+`ks.test(ranks, "punif")` is a formal uniformity test -- useful as a quick numeric summary, but with `n_sbc` in the 8-15 range (a smoke test, not a real calibration run) it has very little power to catch anything but a gross miscalibration. Treat a high p-value here as "no alarm bells," not as proof of calibration -- the histogram is doing the real work, and it needs more replications than a p-value does to be trustworthy.
+
+---
+
+# Running it
+
+```{r sbc-run-mdc}
+sbc_MDC <- run_sbc(
+  model_MDC, draw_true_MDC, simulate_MDC, to_data_list_MDC, contrast_MDC,
+  n_sbc = n_sbc, iter = 50, chains = 2,
+  control = list(adapt_delta = 0.99)   # match the real fit's setting
+)
+
+summarize_sbc(sbc_MDC)
+```
+
+`iter = 1000, chains = 2` here is deliberately light -- each replication only needs enough posterior draws for a reliable rank, not publication-grade precision, and you're aggregating information across `n_sbc` replications rather than trusting any single one. Start with `n_sbc = 8-15` as a fast smoke test (this is what `run_sbc()`'s own defaults assume); if nothing alarming turns up, rerun with `n_sbc = 30+` before trusting the result for real, since a small run can easily miss a real problem it just didn't happen to sample.
+
+## The rank histogram
+
+```{r sbc-histogram}
+ranks_df <- tibble(rank = sapply(sbc_MDC, function(x) x$rank / x$Ns))
+
+ggplot(ranks_df, aes(x = rank)) +
+  geom_histogram(bins = min(10, n_sbc), fill = "steelblue", colour = "white") +
+  geom_hline(yintercept = n_sbc / min(10, n_sbc), linetype = "dashed", colour = "grey30") +
+  theme_light() +
+  labs(x = "Rank statistic (rank / S)", y = "Count",
+       title = "SBC rank histogram: model_MDC",
+       subtitle = paste0(n_sbc, " replications -- compare shape to the toy demo above"))
+```
+
+Compare the shape against the four toy panels from Section 2: flat is good, U-shaped means overconfident, peaked means underconfident, sloped means biased. With only `n_sbc = 15` this will look far noisier than the toy demo's 2000 replications -- that's expected, not a red flag on its own.
+
+---
+
+# Reading the result, back to the original question
+
+This is the actual payoff -- using the SBC output to settle which of the two explanations from Section 1 is really going on.
+
+**If ranks come back roughly uniform *and* `n_divergent` is ~0 across replications:** an occasional extreme tail in the posterior contrast is the model faithfully reporting what `dexp(2)` priors on `sigma[Mg]`/`sigma_cult` actually imply -- not a bug. The lever to pull, if that tail is uncomfortable, is a *scientific* one (tighten the priors further, or bring in outside information about how extreme a cultivar effect plausibly is), not a computational one. A `sim(fit_MDC_sim, ...)`-based prior-predictive check can quantify exactly how far into the tail `dexp(2)` still reaches.
+
+**If ranks are skewed (especially if the skew is worse for replications with large `true_contrast`), or divergences cluster in specific replications:** that's evidence of a real calibration problem, and the character of the skew tells you where to look first -- check whether divergences specifically coincide with the high-`true_contrast` replications (rerun `fit@cstanfit$diagnostic_summary(diagnostics = c("divergences","treedepth"))` per replication if `run_sbc()`'s aggregate `n_divergent` looks high) the same way this project already traced `model_MDLb`'s divergence burst back to its `b[Lo]*sigma_loc` funnel. If so, the fix is the same family of fix: higher `adapt_delta`, tighter priors, or reparameterizing further.
+
+Either way, you now have a specific, falsifiable answer instead of "sometimes it looks weird" -- which was the whole point.
+
+---
+
+<details>
+<summary>
+Common pitfalls
+</summary>
+
+- **Hand-writing "true" parameter draws instead of `extract.prior()`.** Silently tests a different model than the one in your `alist()`, and drifts out of sync the next time you touch a prior.
+- **A `contrast_fn()` that doesn't match your real back-transform.** Calibrating raw `loga`/`sigma` while reporting `lognormal_mean()`-derived contrasts checks the wrong thing.
+- **Over-trusting a small `n_sbc`.** 8-15 replications is a smoke test for catching gross problems fast, not a real calibration run -- both the KS-test p-value and the histogram shape are noisy at that size. Scale up before drawing real conclusions.
+- **Ignoring divergences because "the ranks looked fine."** A handful of pathological replications can still slip through a small, noisy rank histogram. Always report `n_divergent` alongside the histogram, not instead of it.
+- **`control` mismatched with the real fit.** SBC without `adapt_delta` matched to production measures a sampler you don't actually use.
+
+</details>
+
+---
+
+# Reusable template
+
+The fill-in-the-blanks version, for the next model this comes up for:
+
+```{r sbc-template}
+# # 0. the model, its simulator, and its back-transform wrapper -- copy from
+# #    hiermod_lognormal.R's model_X section (model_X, sim_div_X, postcounts_ModelN)
+# 
+# # 1. draw_true(): from extract.prior() on a compiled template fit of `model_X`
+# #    -- one list element per prior model_X's alist() declares
+# prior_X <- extract.prior(fit_X_sim, n = n_sbc)
+# draw_true_X <- function(i) list(
+#   param1 = prior_X$param1[i],  # repeat/adapt per parameter -- see draw_true_MDC above
+#   param2 = prior_X$param2[i, ] # matrix-valued (e.g. a 2-group loga) needs the [i, ] form
+# )
+# 
+# # 2. simulate_data(): reuse your existing sim_div_*() simulator; default N/group
+# #    counts to the real design, not an illustrative round number
+# simulate_X <- function(true_params, N_per_group = NULL) {
+#   mean_ <- loga_to_mean(true_params$loga, true_params$sigma)
+#   cv_   <- sigma_to_cv(true_params$sigma)
+#   # sim_div_X(Mg, ..., mean_ = mean_, cv_ = cv_, ...) -- your model's simulator
+# }
+# 
+# # 3. to_data_list(): reshape to match model_X's alist() variable names exactly
+# to_data_list_X <- function(dat_sim) list(Dv = dat_sim$Dv)  # add every other grouping variable model_X needs
+# 
+# # 4. contrast_fn(): route through the SAME back-transform your real
+# #    "Posterior contrast" section uses -- copy it, don't reinvent it
+# contrast_X <- function(post, true_params) {
+#   # posterior side: lognormal_mean() with model_X's actual total_var terms
+#   # truth side: loga_to_mean() on true_params
+#   list(post_contrast = NULL, true_contrast = NULL)  # fill in, mirroring contrast_MDC above
+# }
+# 
+# # 5. run it, matching the real fit's control= setting, smoke-test size first
+# sbc_X <- run_sbc(model_X, draw_true_X, simulate_X, to_data_list_X, contrast_X,
+#                   n_sbc = 15, control = list(adapt_delta = 0.99))
+# summarize_sbc(sbc_X)
+```

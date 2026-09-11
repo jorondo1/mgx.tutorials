@@ -35,13 +35,21 @@ klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to 
 
 The pipeline relies on a handful of core packages. `mgx.tools` is an in-house package that wraps several verbose utility steps (primer counting, cutadapt execution, chimera reporting, read tracking) so that the main pipeline script stays focused on the actual data processing decisions.
 
-Choose the right tab depending on whether you want to setup to run locally on your computer, or via the ip34/Mammoth cluster.
+Choose the right tab depending on whether you want to setup to run locally on your computer, or via the iv12/Mammoth cluster.
 
-## ip34/Mammoth
+## iv12/Mammoth
 
-If this is your first time using R on ip34, first follow the [ip34 setup instructions](https://jorondo1.github.io/mgx.tutorials/init_ip34.html). 
+If this is your first time using R on iv12, first follow the [iv12 setup instructions](https://jorondo1.github.io/mgx.tutorials/init_ip34.html).
 
-It is highly recommended to work in a tmux session, because certain processes can take long execution times if you have many samples. tmux sessions are explained in the ip34 setup instructions.
+<div class="callout-danger">
+**`iv12` cannot run anything computational** — no R, nothing. All work happens on `cv3401`, reached via `salloc`. If the sequence below (`tmux` → `salloc` → `module load` → `nice R`) doesn't already feel familiar, read the [tmux + salloc section](https://jorondo1.github.io/mgx.tutorials/init_ip34.html#reaching-cv3401-with-tmux--salloc) of the setup guide first.
+</div>
+
+Start a tmux session so a dropped connection doesn't kill your work — this matters here because some steps below (denoising, taxonomy assignment) can run for a long time.
+
+```{bash tmux-new}
+tmux new -s your_session_name
+```
 
 Make sure you are located within a project directory that is accessible to your collaborators, e.g. for a project named TheProjectName:
 ```{bash ip34 dir}
@@ -51,13 +59,19 @@ cd /jbod2/def-ilafores/analysis/TheProjectName    # go into it
 
 If needed, create subfolders in which to download your sequences, which here we named `0_raw`.
 
-Then, load the R environment and dependencies:
+From inside your tmux session, request a slice of `cv3401`:
+
+```{bash salloc}
+salloc --time=08:00:00 --cpus-per-task=24 --mem=250G --partition bio
+```
+
+Once granted, you are on `cv3401` — this is where R is actually allowed to run. Load the R environment and dependencies:
 
 ```{bash ip34 module}
 module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
 ```
 
-If this returned an error, make sure to go through the ip34 setup instructions linked above!
+If this returned an error, make sure to go through the iv12 setup instructions linked above!
 
 Then start R:
 
@@ -65,7 +79,7 @@ Then start R:
 nice R
 ```
 
-Your shell now accepts R commands. Define the path to the `cutadapt` executable, and the number of cores to use:
+Your shell now accepts R commands. Define the path to the `cutadapt` executable, and the number of cores to use — matching what you requested with `salloc`:
 
 ```{r cutadapt_ip34}
 path_cutadapt <- '/cvmfs/soft.mugqic/CentOS6/software/cutadapt/cutadapt-2.10/bin/cutadapt'
@@ -74,7 +88,7 @@ ncores <- 24
 ```
 
 <div class="callout-ip34">
-Using `nice` before a command (here, to start R) distributes core usage equitably among users. 24 is a reasonably high number of cores for ip34 (there are 92). Whichever cluster you are on, remember to think of others using it; don't be a corehogger!
+`cv3401` is shared with the rest of the lab, so be considerate with what you request via `salloc`: 24 cores matches what's used throughout this tutorial, and is a reasonable share of the node. When you're done for the day, quit R (`q()`) and `exit` the `salloc` shell so you're not holding resources idle — see the setup guide for details.
 </div>
 
 ## Local setup
@@ -156,16 +170,41 @@ path_filt <- file.path(path_data, '1_filtN')
 path_cut <- file.path(path_data, '2_cutadapt')
 path_out <- file.path(path_data, '4_out')
 path_summary <- file.path(path_data, 'X_DADA2_Summary')
+path_checkpoint <- file.path(path_data, 'X_checkpoints')
 
 # --- Create output directories:
-if (!dir.exists(path_filt))    dir.create(path_filt)
-if (!dir.exists(path_cut))     dir.create(path_cut)
-if (!dir.exists(path_out))     dir.create(path_out)
-if (!dir.exists(path_summary)) dir.create(path_summary)
+if (!dir.exists(path_filt))       dir.create(path_filt)
+if (!dir.exists(path_cut))        dir.create(path_cut)
+if (!dir.exists(path_out))        dir.create(path_out)
+if (!dir.exists(path_summary))    dir.create(path_summary)
+if (!dir.exists(path_checkpoint)) dir.create(path_checkpoint)
+
+# --- Path to the read-tracking log (see "Resuming an interrupted session" below)
+track_path <- file.path(path_summary, 'track_reads.tsv')
 ```
 
 <div class="callout-note">
-**Directory numbering convention:** Directories are prefixed with integers (`0_raw`, `1_filtN`, `2_cutadapt`, `3_filtered`, `4_out`) to match the pipeline steps and keep them ordered in the file system. `X_DADA2_Summary` collects all diagnostic plots and reports.
+**Directory numbering convention:** Directories are prefixed with integers (`0_raw`, `1_filtN`, `2_cutadapt`, `3_filtered`, `4_out`) to match the pipeline steps and keep them ordered in the file system. `X_DADA2_Summary` collects all diagnostic plots and reports. `X_checkpoints` stores intermediate objects so a stage never has to be recomputed just because the session that produced it is gone.
+</div>
+
+## Resuming an interrupted session
+
+<div class="callout-note">
+**You don't need to read this on a first run** — it only matters if your session gets killed partway through (closed terminal, `salloc` allocation expiring, a crash, etc.).
+
+Every heavy step below ends with two extra lines you wouldn't otherwise need to think about:
+
+- `mgx.tools::log_tracking(...)` appends that step's read counts to `track_reads.tsv`. This means the [read tracking plot](#tracking) at the end never needs `out.N`, `dadaFs`, or any other early-pipeline object to still be in memory — it only reads that file, which survives independently of your R session.
+- `mgx.tools::checkpoint(...)` saves that step's output object (e.g. `errF`, `dadaFs`, `seqtab`) to `X_checkpoints/<name>.RDS`.
+
+If your session dies, you don't need to start over: reopen R, re-run the [Setup](#setup) and [Environment variables](#environment-variables) chunks (cheap), then reload whatever you already computed instead of recomputing it, e.g.:
+
+```{r resume-example, eval = FALSE}
+errF <- mgx.tools::load_checkpoint('errF', path_checkpoint)
+errR <- mgx.tools::load_checkpoint('errR', path_checkpoint)
+```
+
+Then continue from the next chunk you hadn't run yet. Whatever you had already logged via `log_tracking()` is still there, so the final tracking plot will be complete even if you never reload the objects from steps prior to your last checkpoint.
 </div>
 
 ## Input Files {.tabset}
@@ -255,6 +294,11 @@ names(fnRs.filtN) <- sample.names
 rownames(out.N) <- sample.names
 
 head(out.N)
+
+# Log read counts for tracking, and checkpoint out.N (see "Resuming" above)
+mgx.tools::log_tracking('input',    out.N[,1], path = track_path)
+mgx.tools::log_tracking('removeNs', out.N[,2], path = track_path)
+mgx.tools::checkpoint(out.N, 'out.N', path_checkpoint)
 ```
 
 <div class="callout-note">
@@ -355,12 +399,16 @@ out <- filterAndTrim(
   maxEE = c(2, 2), 
   truncLen = c(190, 140),
   minLen = 50, 
-  rm.phix = TRUE, 
+  rm.phix = TRUE,
   compress = TRUE,
   multithread = ncores
 )
 
 rownames(out) <- sample.names
+
+# Log read counts for tracking, and checkpoint out (see "Resuming" above)
+mgx.tools::log_tracking('filtered', out[,2], path = track_path)
+mgx.tools::checkpoint(out, 'out', path_checkpoint)
 ```
 
 <div class="callout-note">
@@ -404,6 +452,10 @@ The DADA2 error model is the core of the pipeline. It learns the rate at which e
 errF <- learnErrors(filtFs_survived, multithread = ncores)
 errR <- learnErrors(filtRs_survived, multithread = ncores)
 
+# Checkpoint the fitted models — learnErrors is expensive, no need to redo it
+mgx.tools::checkpoint(errF, 'errF', path_checkpoint)
+mgx.tools::checkpoint(errR, 'errR', path_checkpoint)
+
 # Visualise the fitted error model — this is an important QC step
 err_plot <- plotErrors(errF, nominalQ = TRUE)
 
@@ -432,6 +484,12 @@ DADA2 uses the error model to partition reads into true sequence variants and no
 ```{r denoise}
 dadaFs <- dada(filtFs_survived, err = errF, pool = 'pseudo', multithread = ncores)
 dadaRs <- dada(filtRs_survived, err = errR, pool = 'pseudo', multithread = ncores)
+
+# Log read counts for tracking, and checkpoint dadaFs/dadaRs (see "Resuming" above)
+mgx.tools::log_tracking('denoisedF', sapply(dadaFs, mgx.tools::getN), path = track_path)
+mgx.tools::log_tracking('denoisedR', sapply(dadaRs, mgx.tools::getN), path = track_path)
+mgx.tools::checkpoint(dadaFs, 'dadaFs', path_checkpoint)
+mgx.tools::checkpoint(dadaRs, 'dadaRs', path_checkpoint)
 ```
 
 <details>
@@ -463,6 +521,10 @@ Keep in mind that the longer the overlap, the higher the probabilities of a mism
 We convert this into a sequence table:
 ```{r seqtab}
 seqtab <- makeSequenceTable(mergers_pooled)
+
+# Log read counts for tracking, and checkpoint seqtab (see "Resuming" above)
+mgx.tools::log_tracking('raw_seqtab', rowSums(seqtab), path = track_path)
+mgx.tools::checkpoint(seqtab, 'seqtab', path_checkpoint)
 ```
 
 ## Filter by expected amplicon length
@@ -499,6 +561,10 @@ seqtab.nochim <- removeBimeraDenovo(
   seqtab2, method = "consensus", multithread = ncores, verbose = TRUE
 )
 
+# Log read counts for tracking, and checkpoint seqtab.nochim (see "Resuming" above)
+mgx.tools::log_tracking('nonchim', rowSums(seqtab.nochim), path = track_path)
+mgx.tools::checkpoint(seqtab.nochim, 'seqtab.nochim', path_checkpoint)
+
 # Report chimera statistics
 sink(file.path(path_summary, "chimera_report.txt"), append = FALSE, split = TRUE)
 mgx.tools::chimera_report(seqtab, seqtab.nochim)
@@ -533,16 +599,10 @@ write_rds(seqtab.filt, file.path(path_out, 'seqtab.RDS'), compress = 'gz')
 
 A summary of read counts at each pipeline step is an essential QC tool. Large losses at a specific step point to specific problems. This will generate a two-panel plot with (1) the number of reads left at each steps for each sample, and (2) the proportion of reads lost between each step.
 
+Because every step above already logged its own read counts to `track_reads.tsv` as it ran (see [Resuming an interrupted session](#resuming-an-interrupted-session)), this step reads only from that file — it works even if this is a fresh R session that never computed `out.N`, `dadaFs`, or any other earlier object itself.
+
 ```{r tracking}
-track_change <- mgx.tools::track_dada(
-  out.N = out.N,
-  out = out,
-  sample.names = sample.names,
-  dadaFs = dadaFs,
-  dadaRs = dadaRs,
-  mergers = mergers_pooled,
-  seqtab.nochim = seqtab.nochim
-)
+track_change <- mgx.tools::track_dada2(track_path)
 
 p_load(patchwork)
 
@@ -739,8 +799,6 @@ Check classification rates
 </summary>
 
 This is a quick code to build a phyloseq object. For analyses, we encourage you to further filter your ASVs to remove ultra rare ones before doing this. Here, it allows us to analyse classification rates.
-
-
 
 ```{r phyloseq}
 BiocManager::install("phyloseq")

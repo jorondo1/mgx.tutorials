@@ -1,0 +1,31 @@
+==== model: model_MDv ====
+
+[[1]]
+Dv ~ dlnorm(mu, sigma[Mg])
+
+[[2]]
+mu <- loga[Mg]
+
+[[3]]
+loga[Mg] ~ dnorm(2, 2)
+
+[[4]]
+sigma[Mg] ~ dexp(1)
+
+
+
+==== precis: fit_MDv ====
+
+          mean    sd  5.5% 94.5%  rhat ess_bulk
+loga[1]  2.011 0.080 1.882 2.138 1.001 38028.36
+loga[2]  2.464 0.079 2.336 2.588 1.000 36418.14
+sigma[1] 0.960 0.057 0.875 1.055 1.000 37183.81
+sigma[2] 0.792 0.057 0.707 0.888 1.000 38299.54
+
+
+==== posterior contrast ====
+mean:   4.248962 
+median: 4.21783 
+89% PI:
+     5%     94% 
+1.25963 7.32231 

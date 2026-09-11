@@ -1,0 +1,193 @@
+---
+title: "Community Composition & Diversity from a Phyloseq Object"
+author: "Jonathan Rondeau-Leclaire"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 2
+    theme: flatly
+    highlight: tango
+    number_sections: true
+    css: mgx.tutorials.css
+---
+
+<div class="callout-note">
+**About this tutorial**
+
+Once you have a `phyloseq` object (ASV/OTU table + taxonomy + sample metadata, all linked together), three analyses come up again and again: a **composition barplot** (relative abundance by taxonomic rank), an **alpha diversity** comparison (within-sample diversity across groups), and a **beta diversity** ordination (between-sample dissimilarity, e.g. a PCoA). This tutorial builds all three, one at a time, from the same publicly available phyloseq object.
+
+It's adapted from a real analysis script, [`5.2_Figs3_4_5_Plots_byCity.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/5.2_Figs3_4_5_Plots_byCity.R), which builds a publication-grade multi-panel figure, published in STOTEN by [Poirier S., Rondeau-Leclaire J., et al 2026](https://www.sciencedirect.com/science/article/pii/S0048969726002846). That version relies on more advanced coding, so we're going to do a simplified version of one of these plots.
+
+</div>
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+klippy::klippy(c('r'), color = 'lightblue', tooltip_message = 'Click to copy', position = c('top', 'right'), tooltip_success = 'Done')
+```
+
+# Setup
+
+```{r env}
+library(pacman)
+p_load(mgx.tools, # devtools::install_github("jorondo1/mgx.tools")
+       tidyverse, phyloseq, RColorBrewer)
+```
+
+`mgx.tools` is the same in-house package used in the [DADA2 tutorial](dada2_16S_tutorial.html); a couple of its small utilities (`samdat_as_tibble()`) show up below.
+
+## Download a toy dataset
+
+If you don't have your own data, you can use this one from `Poirier et al. 2026`. The file actually contains three datasets: bacteria, fungi, and plant particles, pre-processed and rarefied to even sequencing depth.
+
+To download, make sure you are in your working directory (or that you are working using RStudio Projects), otherwise the `data/` directory will get created somewhere (!) on your computer.
+
+```{r load-data}
+# create the directory
+dir.create('data', showWarnings = FALSE)
+ps_path <- 'data/ps_rare.ls.rds' # <- you can change this depending on your directory structure
+
+# Download the .rds object
+if (!file.exists(ps_path)) {
+  download.file(
+    'https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data/ps_rare.ls.rds',
+    ps_path, mode = 'wb'
+  )
+}
+
+# Pull the fungal phyloseq database only
+ps_fung <- read_rds(ps_path)$FUNG
+ps_fung
+```
+
+A phyloseq object bundles three tables together (the ASV/OTU count table, the taxonomy table, and the sample metadata) and keeps them aligned. Pull out just the sample metadata as a tibble, which is all we need to see what we can group by:
+
+```{r peek-samdat}
+samdat_as_tibble(ps_fung) %>%
+  select(Sample, city, time, date) %>%
+  head()
+```
+
+Three sampling cities (`city`), three sampling periods (`time`: Spring/Summer/Fall), each spread across a handful of `date`s. We'll aggregate across `date`, keeping only `city` and `time`.
+
+If you have your own data, you can adapt the code below to your own variables, depending on which metadata categories you want to show separately.
+
+# Analyses {.tabset}
+
+## Relative abundance
+
+### Melt the phyloseq object
+
+`psmelt()` turns a phyloseq object into one long-format table, one row per ASV × sample, with the taxonomy and sample metadata already joined in. 
+
+```{r melt}
+melted_ps <- psmelt(ps_fung) 
+dim(melted_ps)
+```
+
+You can peak into it using `View(melted_ps)` on RStudio, you'll see it's quite a large data frame! Let's tidy it up for ggplot.
+
+### Aggregate to Genus level and compute relative abundance
+
+Pick the taxonomic rank you want to plot, e.g. `Genus`, and aggregate every ASV within each **sample** down to its `Genus`, then normalize within each sample before averaging into `city`/`time` groups:
+
+```{r aggregate}
+relab_df <- melted_ps %>%
+  # Summarise at desired rank:
+  group_by(Sample, city, time, Genus) %>%  # unspecified variables will be dropped!
+  summarise(Abundance = sum(Abundance), .groups = 'drop') %>%
+  # compute relative abundances:
+  group_by(Sample) %>%
+  mutate(relAb = Abundance / sum(Abundance)) %>%
+  # compute mean relative abundance by city X time combinations for each Genus:
+  group_by(city, time, Genus) %>%
+  summarise(relAb = mean(relAb), .groups = 'drop') %>% 
+   # only keep non-zero rows:
+  filter(relAb>0)
+
+relab_df
+```
+
+<div class="callout-note">
+We normalize **within each sample first** (`relAb = Abundance / sum(Abundance)`, grouped by `Sample`), then average those proportions across every sample in a `city`/`time` group. This matters whenever samples don't all have the same sequencing depth: without it, a sample with 200,000 reads would dominate the group average over one with 20,000 reads, even if they're biologically equivalent.
+
+If your phyloseq object is already **rarefied** to even depth (as this one is), every sample already carries equal weight, so you can skip the per-sample step and just sum raw abundances directly within `city`/`time` and normalize once — same result, one less `group_by()`.
+</div>
+
+### Collapse rare genera into "Other"
+
+`relab_df` has `r n_distinct(relab_df$Genus)` distinct genera, wayyy too many for a readable legend. `forcats::fct_lump_n()` keeps the `n` highest-weighted levels and lumps everything else into a single `"Other"` category. We'll plot 12 genera.
+
+```{r lump}
+relab_df <- relab_df %>%
+  mutate(Genus = fct_lump_n(Genus, n = 12, w = relAb, other_level = "Other")) %>%
+  group_by(city, time, Genus) %>%
+  summarise(relAb = sum(relAb), .groups = 'drop')
+
+relab_df
+```
+
+### Plot tweaks [optional]
+
+Two small tweaks make for a nicer plot: order `time` chronologically instead of alphabetically, and order `Genus` alphabetically too, throwing `"Unclassified"` and `"Other"` at the end of the list. You can adapt this to whatever data you have, because usually we want to present our categories in a certain order, and R doesn't know what order that is.
+
+```{r factors}
+genus_levels <- levels(relab_df$Genus)
+# keep whichever of these two are actually present, in this order:
+special_levels <- intersect(c("Unclassified", "Other"), genus_levels)
+ordered_levels <- c(sort(setdiff(genus_levels, special_levels)), special_levels)
+
+relab_df <- relab_df %>%
+  mutate(
+    time  = factor(time, levels = c("Spring", "Summer", "Fall")),
+    Genus = factor(Genus, levels = ordered_levels)
+  )
+```
+
+Since we might end up showing more taxa than a Brewer palette can offer (`RColorBrewer` palettes top out at 12 colours), we expand one by interpolating between its colours. 
+
+```{r palette}
+taxa_pal <- colorRampPalette(brewer.pal(9, "Set1"))(nlevels(relab_df$Genus))
+taxa_pal
+```
+
+You can also build your own palette, obviously! Or even modify that one.
+
+### Plot !
+
+Our goal is to show one column per `city`/`time` combination. We'll put `time` on the x-axis, and facet our plot to have one panel per `city`. You can do other designs, lookup the doc for `facet_wrap()` and `facet_grid()`.
+Imagine you later add a third grouping variable to the data code above (say, `date`) but forget to also reflect it in the plot. `relab_df` would then have *more than one row* per `city`/`time`/`Genus`, which would add up to more than one. To make sure you don't miss it, use  `position = "stack"` (the default for `geom_col()`, spelled out here on purpose) which **sums** every row sharing an `x`/`fill` pair rather than hiding them.
+
+```{r plot-relab, fig.width=9, fig.height=4.5}
+ggplot(relab_df, aes(x = time, y = relAb, fill = Genus)) +
+  geom_col(position = "stack") +
+  facet_grid(~city, ) +
+  scale_fill_manual(values = taxa_pal) +
+  labs(x = NULL, y = "Mean relative abundance", fill = "Genus") +
+  theme_light()
+```
+
+Again, you can change this and even add a third variable in the facet if you want.
+
+Notice the empty `Quebec`/`Summer` panel — there's simply no data for that combination in this dataset. By default, `facet_grid()` will show it empty. If you wanted to hide it, you could add the parameted `scales = 'free_x'` so each panel will only contain the x values for which it has data; it really depends on your goal. 
+
+## Alpha diversity
+
+*Coming in a future update to this tutorial.*
+
+Alpha diversity (e.g. Shannon index) compares diversity *within* each sample, then contrasts it across groups — typically with a boxplot or violin plot per `time`, faceted or colored by `city`. In the source project, the values themselves come from a separate script, [`3.1_diversityMetrics.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/3.1_diversityMetrics.R), which calls `mgx.tools::estimate_diversity()` on each phyloseq object to build a `Sample`-level diversity table before any plotting happens.
+
+## Beta diversity
+
+*Coming in a future update to this tutorial.*
+
+Beta diversity compares dissimilarity *between* samples (e.g. Bray-Curtis distance) and is usually visualized as an ordination — a PCoA scatterplot colored by group, often with confidence ellipses. In the source project this is also built in [`3.1_diversityMetrics.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/3.1_diversityMetrics.R), via `mgx.tools::compute_pcoa()`.
+
+## {-}
+
+---
+
+*This tutorial fulfills the "relative abundance matrix analyses" item from the [setup guide's roadmap](https://jorondo1.github.io/mgx.tutorials/init_ip34.html#coming-soon); the alpha/beta diversity tabs above will fill in as that work continues.*

@@ -7,3 +7,9 @@ Tutorials for amplicon and metagenomics bio-informatics
 ## Improved DADA2 tutorial
 [Current tutorial](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html)
 
+## Simulation-Based Calibration (SBC)
+[Current tutorial](https://jorondo1.github.io/mgx.tutorials/sbc_tutorial.html)
+
+## Community composition & diversity from a phyloseq object
+[Current tutorial](https://jorondo1.github.io/mgx.tutorials/community_composition_tutorial.html)
+

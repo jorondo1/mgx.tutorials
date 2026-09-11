@@ -1,5 +1,5 @@
 ---
-title: "Getting started on ip34 (Mammouth)"
+title: "Getting started on iv12 (Mammouth)"
 author: "Jonathan Rondeau-Leclaire / Laforest-Lapointe Lab"
 date: "Last updated: `r Sys.Date()`"
 output:
@@ -22,14 +22,18 @@ klippy::klippy(c('r', 'bash'), color = 'lightblue', tooltip_message = 'Click to 
 ```
 
 <div class="callout-note">
-**About this guide**  
-I show you how to access UdeSherbrooke's ip34 (aka Mammouth) supercomputer. This node is only accessible to UdS students and requires DRAC sponsorship. 
+**About this guide**
+I show you how to access UdeSherbrooke's iv12 (aka Mammouth) supercomputer. This node is only accessible to UdS students and requires DRAC sponsorship.
 
 This tutorial is tailored for members of the [Laforest Lab](https://www.laforestlab.com/), so some variables or definitions might need to be changed if you are in a different lab.
-
-Steps 1, 2 and 4 only need to be done once. 
 </div>
 
+<div class="callout-danger">
+Since summer 2026, iv12 is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
+</div>
+
+---
+Steps 1, 2 and 4 only need to be done once.
 ---
 
 # Create a DRAC account
@@ -40,12 +44,10 @@ To work on ip34, you need a [Digital Research Alliance of Canada](https://ccdb.a
 
 # Initial setup (locally) 
 
-<div class="callout-danger">
-You only need to do this once, ever!
-</div>
+You only need to do this once, forever!
 
 ## Local configuration {.tabset}
-This will periodically send a signal to ip34 to make sure you don't spontaneously get logged out. _You only need to do this once._
+This will periodically send a signal to Mammouth to make sure you don't spontaneously get logged out. _You only need to do this once._
 
 ### On a Mac
 
@@ -65,7 +67,7 @@ echo ServerAliveInterval 60 >> ~/.ssh/config
 3. Add the following lines to the file:
 
 ```
-Host ip34.ccs.usherbrooke.ca
+Host iv12.ccs.usherbrooke.ca
     ServerAliveInterval 60
 ```
 
@@ -90,13 +92,17 @@ All alliance supercomputers require 2-factor authentification using the DUO app.
 
 ---
 
-# Logging on to ip34
+# Logging on to iv12
 
-Whenever you want to access ip34, run this command with your DRAC username (will prompt for password; nothing shows when you'll write your password, that's normal!). Here, use the username to your DRAC account (not your email), for example:
+Whenever you want to access iv12, run this command with your DRAC username (will prompt for password; nothing shows when you'll write your password, that's normal!). Here, use the username to your DRAC account (not your email), for example:
 
 ```{bash login}
-ssh username@ip34.ccs.usherbrooke.ca
+ssh username@iv12.ccs.usherbrooke.ca
 ```
+
+<div class="callout-note">
+**Note:** confirm this hostname with your lab/sysadmin if it doesn't resolve — it's the direct rename of the old `ip34.ccs.usherbrooke.ca` address, but double-check before relying on it.
+</div>
 
 You will be prompted with 2FA, which will look like:
 
@@ -108,32 +114,28 @@ Passcode or option (1-1):
 
 Type 1, press return, and you will receive a notification to approve on your phone.
 
-Once you are logged in, you'll see something that looks like this:
+Once you are logged in, you'll see something that looks like this (it might change)
 
 ```
-################################################################################
- __  __      ____  _     
-|  \/  |_ __|___ \| |__   Bienvenue sur Mammouth-Mp2b / Welcome to Mammoth-Mp2b
-| |\/| | '_ \ __) | '_ \ 
-| |  | | |_) / __/| |_) | Aide/Support:    mammouth@calculcanada.ca
-|_|  |_| .__/_____|_.__/  Globus endpoint: computecanada#mammouth
-       |_|                Documentation:   docs.calculcanada.ca
-                                           docs.calculcanada.ca/wiki/Mp2
+######################################################################################
 
-Grappe avec le meme environnement d'utilisation que Cedar et Graham (Slurm scheduler).
-Cluster with the same user environment as Cedar and Graham (Slurm scheduler).
+SVP ne lancez pas de calculs sur ce noeud, lancer plutôt un calul interactif.
+Please do not launch your programs on this node, use interactive compute job instead:
 
-________________________________________________________________________________
-          |                               |   Slurm |   Slurm |   Slurm
- Mp2b 	  | Memory/Cores 	                | --nodes | --mem   | --cpus-per-task
- nodetype |                               |   max   |   max   |   max
-----------+-------------------------------+---------+---------+-----------------
- base     |  31 GB memory, 24 cores/node  |   1588  |   31G   |   24  
- large    | 251 GB memory, 48 cores/node  |     20  |  251G   |   48
- xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
-__________|_______________________________|_________|_________|_________________
+salloc -p bio --time=3:00:00 --cpus-per-task=8 --mem=4gb
+
+Vous pouvez rejoindre les anciens répertoires via.
+You can reach old directories with:
+
+/net/nfs-bio/
+
+######################################################################################
 ```
-When you see `>`at the bottom, that means Mammouth is ready to receive commands!
+When you see `>`at the bottom, that means Mammouth is ready to receive commands! (The exact banner text may differ slightly post-restructuring, but the cluster underneath — Mp2b — is the same.)
+
+<div class="callout-danger">
+**Remember: you are still on the login node (`iv12`) at this point.** Nothing computational runs here anymore — no `R`, no scripts, nothing that uses real CPU or memory. Keep reading to see how to reach `cv3401`, where you're actually allowed to work.
+</div>
 
 <div class="callout-danger">
 **Important: you must** execute the following command, **EVERY TIME** you log on to Mammoth:
@@ -147,7 +149,7 @@ Otherwise, any file you create will only be readable and writable by you. Do not
 
 ---
 
-# Initial setup (ip34)
+# Initial setup (iv12)
 
 Add a few lines to your `.bashrc` file, which is executed every time you login.
 
@@ -194,76 +196,104 @@ source ~/.bashrc
 mkdir -p $PROJECT1
 ```
 
-Then, whenever you log in to ip34, using the project directory variable name you've chosen (here PROJECT1), all you have to do is
+Then, whenever you log in to iv12, using the project directory variable name you've chosen (here PROJECT1), all you have to do is
 
 ```{bash daily}
 newgrp def-ilafores  # don't forget! ;-)
 cd $PROJECT1
 ```
 
-And you can start doing science!
-
 <div class="callout-note">
 Check out [this cool tutorial](https://astrobiomike.github.io/unix/unix-intro) to learn how to get around a little more using this language (bash). Calcul Québec  also regularly give 3-hour workshops on command line (bash) programming for Linux. Check out [their offer](https://www.calculquebec.ca/services-aux-chercheurs/formation/catalogue/).
 </div>
+
+You are not ready to "do science" quite yet, though — you're still on `iv12`, and no computation is allowed here. Keep reading.
+
 ---
 
 # What's next? {.tabset}
 
 If you are working with amplicon data, next steps would be to
 
-1. Setup your R environment on ip34 (below)
+1. Setup your R environment and reach `cv3401` (below)
 2. Follow [the DADA2 tutorial](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html)
 
 ## Setting up the R environment
 
-In microbial ecology, when using R, many packages are often required. Packages are bundles of functions that make coding easier, developed by people like you and me around the world. Installing packages on ip34 can sometimes be a bit problematic, so we have a shared library you can copy into your environment and then build on top of it or update depending on your requirements. To copy it:
+In microbial ecology, when using R, many packages are often required. Packages are bundles of functions that make coding easier, developed by people like you and me around the world. Installing packages on iv12 can sometimes be a bit problematic, so we have a shared library you can copy into your environment and then build on top of it or update depending on your requirements. This is a one-time step, and it's just a file copy, so it's fine to run directly on `iv12`:
 
 ```{bash r-libs}
 mkdir -p ~/R/x86_64-pc-linux-gnu-library/4.4
 cp -r $ILAFORES/R_libs_20260401/* ~/R/x86_64-pc-linux-gnu-library/4.4
 ```
 
-Then, load R and activate it.
+## Reaching `cv3401` with `tmux` + `salloc`
+
+<div class="callout-danger">
+**This is the step that replaces what used to be "just start R."** `iv12` cannot run R (or anything else that computes) anymore — everything happens on `cv3401`, the lab's shared compute node, reached with Slurm's `salloc`. The good news: once you're on `cv3401`, everything works exactly as it did before — same `module load`, same `nice R`, same interactive session, quality plots and all.
+</div>
+
+First, start a `tmux` session **on `iv12`**, so that a dropped connection (closed laptop, flaky wifi, going home for the day) doesn't kill your work — `tmux` keeps running on the server even if you disconnect. If you're new to `tmux`, it creates a virtual shell that persists in the background: close your terminal or log out, and whatever is running inside it keeps going.
+
+```{bash tmux-new}
+tmux new -s your_session_name
+```
+
+The text will disappear on your shell and a green line will appear at the bottom — you're in a tmux session. From **inside** this tmux session, request a slice of `cv3401`:
+
+```{bash salloc}
+salloc --time=08:00:00 --cpus-per-task=24 --mem=250G --partition bio
+```
+
+<details>
+<summary>
+What do these salloc flags mean?
+</summary>
+
+- `--time=08:00:00`: how long you're reserving the allocation for (here, a full working day). When this runs out, your session is killed, so pick something comfortable for what you're doing — but don't request days on end "just in case," see below.
+- `--cpus-per-task=24`: number of cores reserved for you, matching the `ncores <- 24` used throughout the DADA2 tutorial.
+- `--mem=250G`: memory reserved. `cv3401` has an enormous amount of RAM available (in the terabyte range), so this is a generous but still considerate slice — increase it if a specific step genuinely needs more.
+- `--partition bio`: routes the request specifically to `cv3401` rather than some other node.
+
+</details>
+
+Once `salloc` grants the allocation, your prompt changes and you are now **on `cv3401`**. This is where actual computation is allowed. Load the R environment and start R exactly as before:
 
 ```{bash r-load}
 module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
 nice R
 ```
-<div class="callout-ip34">
-The cool thing about ip34 is that there are 96 cores available. So whenever the function you run has a `threads` or `cores` argument or something like that, you can choose how many to use.
 
-Keep in mind that you are not alone on ip34! It is generally frowned upon to huddle all the cores. Try to limit yourself to 24 for most purposes. If you need more, there are 1500 computing nodes that can be used, but this requires a little extra legwork in terms of scripting (but you're having fun so that shouldn't be an issue!).
+<div class="callout-ip34">
+`cv3401` is shared with the rest of the lab, so `salloc` is what keeps everyone's usage fair and visible — instead of everyone informally self-limiting on a shared login node, Slurm now enforces it by only ever giving you the slice you asked for. Still be considerate: don't request more cores/memory/time than you need, and release your allocation (see below) as soon as you're done rather than leaving it idle.
 </div>
 
 <details>
 <summary>
 what's nice?
 </summary>
-`nice` is recommended so your program is "nice to others" who use the same resources (so you don't hoard all the cores in ip34). Once you run this, you are now in the equivalent of an R console, which accepts R commands (don't write in bash!). The `>` at the beginning of a new line expects commands in the R language. You'll need to install the packages you need (only once), as you once did on your computer. By default, your current directory will be the one you were in when you activated R.
+`nice` is recommended so your program is "nice to others" sharing the same allocation logic. Once you run this, you are in the equivalent of an R console, which accepts R commands (don't write in bash!). The `>` at the beginning of a new line expects commands in the R language. You'll need to install the packages you need (only once), as you once did on your computer. By default, your current directory will be the one you were in when you activated R.
 </details>
 
-## Running stuff in the background with `tmux`
+### Detaching, reattaching, and cleaning up
 
-Imagine you want to run DADA2's sample inference on hundreds of samples... that might take a while! If you want to go home and let it run while you binge-watch Friends, you can either let your laptop running (not recommended), or use a cool little tool called `tmux` directly on ip34. Essentially, tmux creates a virtual shell that runs in the background. If you close your ip34 session (or just log out), it keeps running. Within that tmux shell, you can run anything like you would on your normal shell. To get it running, log in to ip34, get where you need to be, then run:
-
-```{bash tmux-new}
-tmux new -s your_session_name
-```
-
-The text will disappear on your shell and a green line will appear at the bottom. That's it, you are in a tmux session! You can do anything you would normally have, like load your R environment and execute some commands. Once your code is running, you can log out by using the shortcut `Ctrl+B` on your keyboard, then pressing `D`. `Ctrl+B` lets you send one command to control tmux from within a tmux session, and here we use `D`, which means to Detach from the tmux session. You'll be back to where you were before creating the tmux session. You can check open sessions by doing
+You can detach from `tmux` (leaving both `tmux` and your `salloc` allocation running) with `Ctrl+B` then `D`. You'll land back on `iv12`. Check what's still running with:
 
 ```{bash tmux-ls}
 tmux ls
 ```
 
-You can reattach to a session using its name:
+Reattach to it later with:
 
 ```{bash tmux-attach}
 tmux attach -t your_session_name
 ```
 
-And you'll see your code is still running.
+...and you'll find your R session on `cv3401` exactly as you left it, as long as your `--time` allocation hasn't expired.
+
+<div class="callout-danger">
+**When you're actually done for the day**, don't just detach — quit R with `q()`, then `exit` the `salloc` shell to release your allocation. Otherwise you keep holding 24 cores and 250 GB idle until the time limit runs out, unavailable to your labmates.
+</div>
 
 <div class="callout-note">
 To learn more about tmux (like how to see multiple sessions simultaneously), check out [this blog post](https://www.redhat.com/en/blog/introduction-tmux-linux).
