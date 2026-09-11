@@ -34,7 +34,7 @@ klippy::klippy(c('r'), color = 'lightblue', tooltip_message = 'Click to copy', p
 ```{r env}
 library(pacman)
 p_load(mgx.tools, # devtools::install_github("jorondo1/mgx.tools")
-       tidyverse, phyloseq, RColorBrewer)
+       tidyverse, phyloseq, RColorBrewer, vegan, rstatix, kableExtra, knitr)
 ```
 
 `mgx.tools` is the same in-house package used in the [DADA2 tutorial](dada2_16S_tutorial.html); a couple of its small utilities (`samdat_as_tibble()`) show up below.
@@ -65,12 +65,14 @@ If you have your own data, you can adapt the code below to your own variables, d
 
 ## Relative abundance
 
+**Objective: ** plot the mean relative abundance for each season within each city, while showing only the top 12 taxa and bundling the rest in an "Others" category.
+
 ### Melt the phyloseq object
 
 `psmelt()` turns a phyloseq object into one long-format table, one row per ASV × sample, with the taxonomy and sample metadata already joined in. 
 
 ```{r melt}
-melted_ps <- psmelt(ps_fung) 
+melted_ps <- psflashmelt(ps_fung) 
 dim(melted_ps)
 ```
 
@@ -142,38 +144,191 @@ taxa_pal
 
 You can also build your own palette, obviously! Or even modify that one.
 
+```{r}
+taxa_pal[13] <- "grey80" # (12+1)th position is "Others"
+taxa_pal[12] <- "grey50" # 12th position is Unclassified
+```
+
+
 ### Plot !
 
-Our goal is to show one column per `city`/`time` combination. We'll put `time` on the x-axis, and facet our plot to have one panel per `city`. You can do other designs, lookup the doc for `facet_wrap()` and `facet_grid()`.
-Imagine you later add a third grouping variable to the data code above (say, `date`) but forget to also reflect it in the plot. `relab_df` would then have *more than one row* per `city`/`time`/`Genus`, which would add up to more than one. To make sure you don't miss it, use  `position = "stack"` (the default for `geom_col()`, spelled out here on purpose) which **sums** every row sharing an `x`/`fill` pair rather than hiding them.
+ We'll put `time` on the x-axis, and facet our plot to have one panel per `city`. You can do other designs, lookup the doc for `facet_wrap()` and `facet_grid()`.
 
 ```{r plot-relab, fig.width=9, fig.height=4.5}
 ggplot(relab_df, aes(x = time, y = relAb, fill = Genus)) +
   geom_col(position = "stack") +
-  facet_grid(~city, ) +
+  facet_grid(~city) +
   scale_fill_manual(values = taxa_pal) +
   labs(x = NULL, y = "Mean relative abundance", fill = "Genus") +
   theme_light()
 ```
 
-Again, you can change this and even add a third variable in the facet if you want.
+<details>
+<summary>
+What if I want to show more categories?
+</summary>
+If you had a third variable (let's call it `condition`), one way to modify that plot would be to add it to the faceting variables, e.g. `facet_grid(condition~city)`. You would still get one column-faceting by city, but also one row-faceting by condition now; the y axis would appear as many times as you have conditions.
+</details>
 
-Notice the empty `Quebec`/`Summer` panel — there's simply no data for that combination in this dataset. By default, `facet_grid()` will show it empty. If you wanted to hide it, you could add the parameted `scales = 'free_x'` so each panel will only contain the x values for which it has data; it really depends on your goal. 
+Notice the empty Quebec-Summer panel: there's no data for that combination. By default, `facet_grid()` will show it, empty. If you wanted to hide it, you could add the parameted `scales = 'free_x'` so each panel will only contain the x values for which it has data; it really depends on your goal. 
+
+<div class="callout-danger">
+**Sanity check!**
+
+Imagine you needed add a third grouping variable to the data code above (say, `date`). But you forgot to add that variable to the plot! `relab_df` would then have *more than one row* per `city`/`time`/`Genus`, which would add up to more than one. To double-check the data is fine,
+
+```{r sanity-check}
+# 1. Exactly one row per (city, time, Genus)? This should return 0 rows.
+relab_df %>% count(city, time, Genus) %>% filter(n > 1)
+
+# 2. Does every bar actually sum to 1?
+relab_df %>% group_by(city, time) %>% summarise(total = sum(relAb), .groups = 'drop')
+```
+
+To make sure you don't miss it, use  `position = "stack"` (the default for `geom_col()`, spelled out here on purpose) which **sums** every row sharing an `x`/`fill` pair rather than hiding them.
+
+</div>
+
 
 ## Alpha diversity
 
-*Coming in a future update to this tutorial.*
+Alpha diversity is diversity *within* a sample: how many taxa there are, and how evenly they're distributed. We'll use the Shannon index and compare it across seasons, within each city.
 
-Alpha diversity (e.g. Shannon index) compares diversity *within* each sample, then contrasts it across groups — typically with a boxplot or violin plot per `time`, faceted or colored by `city`. In the source project, the values themselves come from a separate script, [`3.1_diversityMetrics.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/3.1_diversityMetrics.R), which calls `mgx.tools::estimate_diversity()` on each phyloseq object to build a `Sample`-level diversity table before any plotting happens.
+### Rarefy, then compute Shannon diversity
+
+Diversity indices need every sample subsampled to the same sequencing depth to be comparable — otherwise a deeper sample looks "more diverse" simply because it was sequenced more.
+
+```{r rarefy-alpha}
+set.seed(1)
+ps_fung_rare <- rarefy_even_depth(ps_fung, rngseed = 1)
+```
+
+<div class="callout-note">
+This dataset is already rarefied, so the step above changes nothing here — but real data usually isn't. Ideally you'd also rarefy *many* times and average each index across iterations, since any single random draw can be unlucky; `mgx.tools::rarefy_diversity()` does exactly that. For this tutorial, one draw is enough.
+</div>
+
+`mgx.tools::estimate_diversity()` computes Shannon (or `Richness`/`Simpson`/`Tail`) straight from the OTU table, one value per sample:
+
+```{r shannon}
+shannon_df <- estimate_diversity(ps_fung_rare, "Shannon") %>%
+  enframe(name = "Sample", value = "Shannon")
+
+alpha_df <- samdat_as_tibble(ps_fung_rare) %>%
+  select(Sample, city, time) %>%
+  left_join(shannon_df, by = "Sample") %>%
+  mutate(time = factor(time, levels = c("Spring", "Summer", "Fall")))
+
+alpha_df
+```
+
+### Plot
+
+```{r plot-alpha, fig.width=8, fig.height=4}
+ggplot(alpha_df, aes(x = time, y = Shannon, fill = time)) +
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(width = 0.15, outlier.shape = NA) +
+  facet_grid(~city) +
+  labs(x = NULL, y = "Shannon index", fill = "Season") +
+  theme_light()
+```
+
+### Wilcoxon tests, corrected for multiple comparisons
+
+`rstatix::wilcox_test()` runs one test per pair of seasons, per group — here, `city`. `adjust_pvalue()` then corrects those p-values (Benjamini-Hochberg, i.e. false discovery rate), separately within each city:
+
+```{r alpha-stats}
+alpha_stats <- alpha_df %>%
+  group_by(city) %>%
+  wilcox_test(Shannon ~ time) %>%
+  adjust_pvalue(method = "BH") %>%
+  add_significance("p.adj")
+
+alpha_stats
+```
+
+Package it as an html table:
+
+```{r alpha-kable}
+alpha_kable <- alpha_stats %>%
+  select(city, group1, group2, p, p.adj, p.adj.signif) %>%
+  kable(caption = "Wilcoxon rank-sum test: Shannon diversity by season, within each city (BH-adjusted)") %>%
+  kable_styling(full_width = FALSE)
+
+alpha_kable
+save_kable(alpha_kable, "alpha_wilcox.html")
+```
+
+`save_kable()` writes the table out as a standalone `.html` file you can share or embed elsewhere.
 
 ## Beta diversity
 
-*Coming in a future update to this tutorial.*
+Beta diversity compares dissimilarity *between* samples. We'll compute Bray-Curtis distance on variance-stabilized counts, visualize it with a PCoA, and test it with a PERMANOVA.
 
-Beta diversity compares dissimilarity *between* samples (e.g. Bray-Curtis distance) and is usually visualized as an ordination — a PCoA scatterplot colored by group, often with confidence ellipses. In the source project this is also built in [`3.1_diversityMetrics.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/3.1_diversityMetrics.R), via `mgx.tools::compute_pcoa()`.
+### Rarefy, variance-stabilize, and compute Bray-Curtis
+
+```{r rarefy-beta}
+set.seed(1)
+ps_fung_rare <- rarefy_even_depth(ps_fung, rngseed = 1)
+```
+
+Same caveat as for alpha diversity: one rarefaction draw here for simplicity, `mgx.tools::rarefy_diversity()` for the iterate-and-average version.
+
+`mgx.tools::compute_pcoa()` does three things in one call: variance-stabilizes the counts (DESeq2's VST — it handles the mean-variance relationship in count data better than a plain log-transform), computes a Bray-Curtis distance matrix on the transformed counts, then runs classical multidimensional scaling (PCoA) to get 2D coordinates:
+
+```{r pcoa}
+bray_pcoa <- compute_pcoa(ps_fung_rare, dist = "bray", vst = TRUE)
+names(bray_pcoa)
+```
+
+It returns a list: `metadata` (sample data with `PCo1`/`PCo2` added), `eig` (eigenvalues, for the % variance explained by each axis), and `dist.mx` (the distance matrix itself — we'll need it for the PERMANOVA below).
+
+### Plot the PCoA
+
+```{r plot-beta, fig.width=6.5, fig.height=4.5}
+pcoa_df <- bray_pcoa$metadata %>%
+  rownames_to_column("Sample") %>%
+  mutate(time = factor(time, levels = c("Spring", "Summer", "Fall")))
+
+eig_pct <- round(100 * bray_pcoa$eig[1:2] / sum(bray_pcoa$eig), 1)
+
+ggplot(pcoa_df, aes(x = PCo1, y = PCo2, colour = time, fill = time)) +
+  geom_point(size = 2) +
+  stat_ellipse(geom = "polygon", alpha = 0.15, level = 0.95) +
+  labs(x = paste0("PCo1 (", eig_pct[1], "%)"),
+       y = paste0("PCo2 (", eig_pct[2], "%)"),
+       colour = "Season", fill = "Season") +
+  theme_light()
+```
+
+Samples separate cleanly by season here — a strong beta diversity signal, and exactly what the PERMANOVA below tests formally. You could just as easily colour or facet by `city` instead (or in addition).
+
+### PERMANOVA
+
+`vegan::adonis2()` tests whether group membership explains a significant share of the distance matrix. We model both `city` and `time` (season):
+
+```{r permanova}
+set.seed(1)
+permanova <- adonis2(bray_pcoa$dist.mx ~ city + time,
+                     data = bray_pcoa$metadata,
+                     permutations = 999, by = "terms")
+permanova
+```
+
+(999 permutations here for speed — bump this up, e.g. to 9999, for a real analysis.)
+
+```{r beta-kable}
+beta_kable <- permanova %>%
+  as.data.frame() %>%
+  rownames_to_column("term") %>%
+  filter(term != "Total") %>%
+  mutate(across(where(is.numeric), ~round(., 3))) %>%
+  kable(caption = "PERMANOVA: Bray-Curtis ~ city + time") %>%
+  kable_styling(full_width = FALSE)
+
+beta_kable
+save_kable(beta_kable, "beta_permanova.html")
+```
+
+Both `city` and `time` explain a significant share of the variance (the `R2` column), consistent with the clear seasonal clustering in the plot above.
 
 ## {-}
-
----
-
-*This tutorial fulfills the "relative abundance matrix analyses" item from the [setup guide's roadmap](https://jorondo1.github.io/mgx.tutorials/init_ip34.html#coming-soon); the alpha/beta diversity tabs above will fill in as that work continues.*
