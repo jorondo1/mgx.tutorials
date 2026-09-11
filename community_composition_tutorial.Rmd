@@ -3,7 +3,7 @@ title: "Community Composition & Diversity from a Phyloseq Object"
 author: "Jonathan Rondeau-Leclaire"
 date: "`r Sys.Date()`"
 output:
-  html_document:
+  bookdown::html_document2:
     toc: true
     toc_float:
       collapsed: false
@@ -61,13 +61,11 @@ Three sampling cities (`city`), three sampling periods (`time`: Spring/Summer/Fa
 
 If you have your own data, you can adapt the code below to your own variables, depending on which metadata categories you want to show separately.
 
-# Analyses {.tabset}
-
-## Relative abundance
+# Relative abundance plots
 
 **Objective: ** plot the mean relative abundance for each season within each city, while showing only the top 12 taxa and bundling the rest in an "Others" category.
 
-### Melt the phyloseq object
+## Melt the phyloseq object
 
 `psmelt()` turns a phyloseq object into one long-format table, one row per ASV × sample, with the taxonomy and sample metadata already joined in. 
 
@@ -78,7 +76,7 @@ dim(melted_ps)
 
 You can peak into it using `View(melted_ps)` on RStudio, you'll see it's quite a large data frame! Let's tidy it up for ggplot.
 
-### Aggregate to Genus level and compute relative abundance
+## Mean relative abundances
 
 Pick the taxonomic rank you want to plot, e.g. `Genus`, and aggregate every ASV within each **sample** down to its `Genus`, then normalize within each sample before averaging into `city`/`time` groups:
 
@@ -118,7 +116,7 @@ We normalize **within each sample first** (`relAb = Abundance / sum(Abundance)`,
 If your phyloseq object is already **rarefied** to even depth (as this one is), every sample already carries equal weight, so you can skip the per-sample step and just sum raw abundances directly within `city`/`time` and normalize once — same result, one less `group_by()`.
 </div>
 
-### Collapse rare genera into "Other"
+## Create "Others" category
 
 `relab_df` has `r n_distinct(relab_df$Genus)` distinct genera, wayyy too many for a readable legend. `forcats::fct_lump_n()` keeps the `n` highest-weighted levels and lumps everything else into a single `"Other"` category. We'll plot 12 genera.
 
@@ -131,7 +129,7 @@ relab_df <- relab_df %>%
 relab_df
 ```
 
-### Plot tweaks [optional]
+## Plot tweaks [optional]
 
 Two small tweaks make for a nicer plot: order `time` chronologically instead of alphabetically, and order `Genus` alphabetically too, throwing `"Unclassified"` and `"Other"` at the end of the list. You can adapt this to whatever data you have, because usually we want to present our categories in a certain order, and R doesn't know what order that is.
 
@@ -163,17 +161,19 @@ taxa_pal[12] <- "grey50" # 12th position is Unclassified
 ```
 
 
-### Plot !
+## Plot !
 
 We'll put `time` on the x-axis, and facet our plot to have one panel per `city`. You can do other designs, lookup the doc for `facet_wrap()` and `facet_grid()`.
 
 ```{r plot-relab, fig.width=9, fig.height=4.5}
-ggplot(relab_df, aes(x = time, y = relAb, fill = Genus)) +
+relab_plot <- ggplot(relab_df, aes(x = time, y = relAb, fill = Genus)) +
   geom_col(position = "stack") +
   facet_grid(~city) +
   scale_fill_manual(values = taxa_pal) +
   labs(x = NULL, y = "Mean relative abundance", fill = "Genus") +
   theme_light()
+
+relab_plot
 ```
 
 <details>
@@ -203,11 +203,19 @@ To make sure you don't miss it, use  `position = "stack"` (the default for `geom
 </div>
 
 
-## Alpha diversity
+## Export output 
+
+```{r comp-save, eval = FALSE}
+ggsave(relab_plot, "community_composition.pdf", bg = 'white', 
+       width = 2400, height = 2000, units = 'px', dpi = 220)
+```
+
+
+# Alpha diversity
 
 Alpha diversity is diversity *within* a sample: how many ASVs there are, and how evenly they're distributed. We'll use the Shannon index, a very commonly reported index in microbiome research, and compare it across seasons, within each city.
 
-### Rarefy, then compute Shannon diversity
+## Rarefy
 
 According to the latest research ([Schloss, 2024](https://journals.asm.org/doi/10.1128/msphere.00354-23)), diversity indices needs to be rarefied to the same sequencing depth to be comparable. Otherwise, a deeper sample could look "more diverse" simply because it was sequenced more. 
 
@@ -221,6 +229,8 @@ This toy dataset is already rarefied, so the step above changes nothing really. 
 
 Actually, ideally we'd also rarefy *many* times and average each index across iterations, since any single random draw can be unlucky; `mgx.tools::rarefy_diversity()` does exactly that (and much more), but requires a lot of processing time.
 </div>
+
+## Compute diversity
 
 `mgx.tools::estimate_diversity()` computes the index you want directly from a phyloseq object, generating one value per sample.
 
@@ -243,7 +253,7 @@ alpha_df
 For alternative indices, `estimate_diversity()` currently supports Richness, Shannon, Simpson or Tail. If you are interested in Hill numbers, Hill order 1 is `exp(Shannon)` and Hill order 2 is `1/Simpson`; you can create them using `mutate()`.
 </div>
 
-### Plot
+## Plot !
 
 Let's make a violin plot !
 
@@ -257,9 +267,9 @@ alpha_plot <- alpha_df %>%
 alpha_plot 
 ```
 
-### Wilcoxon tests, corrected for multiple comparisons
+## Wilcoxon tests
 
-We use `rstatix::wilcox_test()` to run one test per pair of seasons, per group (here, `city`). `adjust_pvalue()` then corrects those p-values (Benjamini-Hochberg, i.e. false discovery rate):
+We use `rstatix::wilcox_test()` to run one test per pair of seasons, per group (here, `city`). `adjust_pvalue()` then corrects those p-values (Benjamini-Hochberg, i.e. false discovery rate). 
 
 ```{r alpha-stats}
 alpha_stats <- alpha_df %>%
@@ -270,6 +280,7 @@ alpha_stats <- alpha_df %>%
 
 alpha_stats
 ```
+Note: This test only serves to compare a numerical variable between categories!
 
 <div class='callout-danger'>
 Notice that these only test **within city**, not between cities! This is what `group_by()` serves.
@@ -295,7 +306,7 @@ alpha_plot <- alpha_plot +
   stat_pvalue_manual(alpha_stats_pos, label = "p.adj.signif", hide.ns = TRUE)
 ```
 
-### Save your output!
+## Export output 
 
 ```{r alpha-save, eval = FALSE}
 save_kable(alpha_kable, "alpha_wilcox.html")
@@ -305,11 +316,11 @@ ggsave(alpha_plot, "alpha_div.pdf", bg = 'white',
 
 `save_kable()` writes the table out as a standalone `.html` file you can share or embed elsewhere. It's also easy to copy from, to paste into Word Office for example.
 
-## Beta diversity
+# Beta diversity
 
 Beta diversity compares dissimilarity *between* samples. We'll compute Bray-Curtis distance on variance-stabilized counts, visualize it with a PCoA, and test it with a PERMANOVA.
 
-### Rarefy, variance-stabilize, and compute Bray-Curtis
+## Rarefaction and VST
 
 ```{r rarefy-beta}
 set.seed(1)
@@ -318,10 +329,14 @@ ps_fung_rare <- rarefy_even_depth(ps_fung, rngseed = 1)
 
 Same caveat as for alpha diversity: one rarefaction draw here for simplicity, `mgx.tools::rarefy_diversity()` for the iterate-and-average version.
 
-`mgx.tools::compute_pcoa()` does three things in one call: 
-1. variance-stabilizes the counts (using DESeq2's VST: handles the mean-variance relationship in count data better than a plain log-transform);
-2. computes a Bray-Curtis distance matrix on the transformed counts
-3. then runs classical multidimensional scaling (PCoA) to get 2D coordinates:
+## Compute diversity
+
+`mgx.tools::compute_pcoa()` does many things in one call: 
+1. computes a distance/dissimilarity matrix using the metric of your choice
+2. run classical multidimensional scaling (PCoA) to get 2D coordinates
+
+Optionally, for Bray-Curtis dissimilarities, we variance-stabilize the counts using DESeq2's VST: handles the mean-variance relationship in count data better than a plain log-transform. To do that, add `vst = TRUE` as below:
+
 
 ```{r pcoa}
 bray_pcoa <- compute_pcoa(ps_fung_rare, dist = "bray", vst = TRUE)
@@ -330,7 +345,7 @@ names(bray_pcoa)
 
 It returns a list: `metadata` (sample data with two `PCo1`/`PCo2` columns added, for plotting), `eig` (eigenvalues, for the % variance explained by each axis, which we'll add to the plot), and `dist.mx` (the distance matrix itself — we'll need it for the PERMANOVA below).
 
-### Plot the PCoA
+## Plot the PCoA
 
 Prep the data:
 
@@ -366,7 +381,7 @@ Samples separate cleanly by season here, We have a strong beta diversity signal.
 NOTE: if you wanted to show one PCoA per city, don't simply split `bray_pcoa$metadata` in three. You should be doing one independent PCoA per city. 
 </div>
 
-### PERMANOVA
+## PERMANOVA
 
 `vegan::adonis2()` tests whether group membership explains a significant share of the distance matrix. We model both `city` and `time` (season), see which variable explains the most variance in beta diversity.
 
@@ -394,7 +409,7 @@ beta_kable <- permanova %>%
 beta_kable
 ```
 
-### Save your output!
+## Export output
 
 ```{r beta-save, eval = FALSE}
 save_kable(beta_kable, "beta_permanova.html")
@@ -403,5 +418,3 @@ ggsave(pcoa_df, "beta_pcoa.pdf", bg = 'white',
 ```
 
 Both `city` and `time` explain a significant share of the variance (the `R2` column), consistent with the clear seasonal clustering in the plot above.
-
-## {-}
