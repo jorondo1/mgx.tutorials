@@ -43,23 +43,9 @@ p_load(mgx.tools, # devtools::install_github("jorondo1/mgx.tools")
 
 If you don't have your own data, you can use this one from `Poirier et al. 2026`. The file actually contains three datasets: bacteria, fungi, and plant particles, pre-processed and rarefied to even sequencing depth.
 
-To download, make sure you are in your working directory (or that you are working using RStudio Projects), otherwise the `data/` directory will get created somewhere (!) on your computer.
-
 ```{r load-data}
-# create the directory
-dir.create('data', showWarnings = FALSE)
-ps_path <- 'data/ps_rare.ls.rds' # <- you can change this depending on your directory structure
-
-# Download the .rds object
-if (!file.exists(ps_path)) {
-  download.file(
-    'https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data/ps_rare.ls.rds',
-    ps_path, mode = 'wb'
-  )
-}
-
-# Pull the fungal phyloseq database only
-ps_fung <- read_rds(ps_path)$FUNG
+poirier_data <- read_rds('https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data/ps_rare.ls.rds')
+ps_fung <- poirier_data$FUNG
 ps_fung
 ```
 

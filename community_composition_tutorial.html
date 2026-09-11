@@ -1873,24 +1873,9 @@ dataset</h2>
 <code>Poirier et al. 2026</code>. The file actually contains three
 datasets: bacteria, fungi, and plant particles, pre-processed and
 rarefied to even sequencing depth.</p>
-<p>To download, make sure you are in your working directory (or that you
-are working using RStudio Projects), otherwise the <code>data/</code>
-directory will get created somewhere (!) on your computer.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># create the directory</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">&#39;data&#39;</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>ps_path <span class="ot">&lt;-</span> <span class="st">&#39;data/ps_rare.ls.rds&#39;</span> <span class="co"># &lt;- you can change this depending on your directory structure</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># Download the .rds object</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(ps_path)) {</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="fu">download.file</span>(</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    <span class="st">&#39;https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data/ps_rare.ls.rds&#39;</span>,</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>    ps_path, <span class="at">mode =</span> <span class="st">&#39;wb&#39;</span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  )</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>}</span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co"># Pull the fungal phyloseq database only</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>ps_fung <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(ps_path)<span class="sc">$</span>FUNG</span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>ps_fung</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>poirier_data <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">&#39;https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data/ps_rare.ls.rds&#39;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>ps_fung <span class="ot">&lt;-</span> poirier_data<span class="sc">$</span>FUNG</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>ps_fung</span></code></pre></div>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 1348 taxa and 148 samples ]
 ## sample_data() Sample Data:       [ 148 samples by 35 sample variables ]
