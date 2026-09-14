@@ -9,4 +9,3 @@ Tutorials for amplicon and metagenomics bio-informatics
 
 ## Community composition & diversity from a phyloseq object
 [Current tutorial](https://jorondo1.github.io/mgx.tutorials/community_composition_tutorial.html)
-

@@ -1832,7 +1832,7 @@ font-size: 0.95em;
 <h1 class="title toc-ignore">Getting started on iv12 (Mammouth)</h1>
 <h4 class="author">Jonathan Rondeau-Leclaire / Laforest-Lapointe
 Lab</h4>
-<h4 class="date">Last updated: 2026-08-06</h4>
+<h4 class="date">Last updated: 2026-09-14</h4>
 
 </div>
 
@@ -1848,19 +1848,22 @@ accessible to UdS students and requires DRAC sponsorship.</p>
 <p>This tutorial is tailored for members of the <a href="https://www.laforestlab.com/">Laforest Lab</a>, so some variables
 or definitions might need to be changed if you are in a different
 lab.</p>
-<p>Steps 1, 2 and 4 only need to be done once.</p>
 </div>
 <div class="callout-danger">
-<p><strong>Infrastructure change:</strong> <code>ip34</code> has been
-restructured and renamed <code>iv12</code>. It is now a <strong>login
-node only</strong> — no computation of any kind (not even a quick
-interactive R command) is allowed there anymore. All actual work happens
-on <code>cv3401</code>, a large dedicated compute node reached through
-Slurm’s <code>salloc</code>. This guide reflects that new workflow:
-you’ll always SSH into <code>iv12</code>, then <code>salloc</code> your
-way onto <code>cv3401</code> before doing anything else.</p>
+<p>As of summer 2026, iv12 (formerly ip34) is accessible via a
+<strong>login node</strong> where no computation of any kind is allowed.
+All actual work happens on <code>cv3401</code>, a large dedicated
+compute node you need to access once you are logged in. Essentially, you
+log into <code>hpc-bio.ccs.usherbrooke.ca</code>, then connect to
+<code>cv3401</code> before doing anything else.</p>
 </div>
-<hr />
+<table>
+<tbody>
+<tr class="odd">
+<td>Steps 1, 2 and 4 only need to be done once.</td>
+</tr>
+</tbody>
+</table>
 <div id="create-a-drac-account" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Create a DRAC
 account</h1>
@@ -1872,14 +1875,12 @@ code. For help, visit their <a href="https://docs.alliancecan.ca/wiki/Frequently
 <div id="initial-setup-locally" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Initial setup
 (locally)</h1>
-<div class="callout-danger">
-<p>You only need to do this once, ever!</p>
-</div>
+<p>You only need to do this once, forever!</p>
 <div id="local-configuration" class="section level2 tabset" number="2.1">
 <h2 class="tabset"><span class="header-section-number">2.1</span> Local
 configuration</h2>
-<p>This will periodically send a signal to ip34 to make sure you don’t
-spontaneously get logged out. <em>You only need to do this
+<p>This will periodically send a signal to Mammouth to make sure you
+don’t spontaneously get logged out. <em>You only need to do this
 once.</em></p>
 <div id="on-a-mac" class="section level3" number="2.1.1">
 <h3><span class="header-section-number">2.1.1</span> On a Mac</h3>
@@ -1941,29 +1942,21 @@ relying on it.</p>
 Passcode or option (1-1):</code></pre>
 <p>Type 1, press return, and you will receive a notification to approve
 on your phone.</p>
-<p>Once you are logged in, you’ll see something that looks like
-this:</p>
-<pre><code>################################################################################
- __  __      ____  _     
-|  \/  |_ __|___ \| |__   Bienvenue sur Mammouth-Mp2b / Welcome to Mammoth-Mp2b
-| |\/| | &#39;_ \ __) | &#39;_ \ 
-| |  | | |_) / __/| |_) | Aide/Support:    mammouth@calculcanada.ca
-|_|  |_| .__/_____|_.__/  Globus endpoint: computecanada#mammouth
-       |_|                Documentation:   docs.calculcanada.ca
-                                           docs.calculcanada.ca/wiki/Mp2
+<p>Once you are logged in, you’ll see something that looks like this (it
+might change)</p>
+<pre><code>######################################################################################
 
-Grappe avec le meme environnement d&#39;utilisation que Cedar et Graham (Slurm scheduler).
-Cluster with the same user environment as Cedar and Graham (Slurm scheduler).
+SVP ne lancez pas de calculs sur ce noeud, lancer plutôt un calul interactif.
+Please do not launch your programs on this node, use interactive compute job instead:
 
-________________________________________________________________________________
-          |                               |   Slurm |   Slurm |   Slurm
- Mp2b     | Memory/Cores                    | --nodes | --mem   | --cpus-per-task
- nodetype |                               |   max   |   max   |   max
-----------+-------------------------------+---------+---------+-----------------
- base     |  31 GB memory, 24 cores/node  |   1588  |   31G   |   24  
- large    | 251 GB memory, 48 cores/node  |     20  |  251G   |   48
- xlarge   | 503 GB memory, 48 cores/node  |      2  |  503G   |   48
-__________|_______________________________|_________|_________|_________________</code></pre>
+salloc -p bio --time=3:00:00 --cpus-per-task=8 --mem=4gb
+
+Vous pouvez rejoindre les anciens répertoires via.
+You can reach old directories with:
+
+/net/nfs-bio/
+
+######################################################################################</code></pre>
 <p>When you see <code>&gt;</code>at the bottom, that means Mammouth is
 ready to receive commands! (The exact banner text may differ slightly
 post-restructuring, but the cluster underneath — Mp2b — is the
@@ -1975,11 +1968,11 @@ at this point.</strong> Nothing computational runs here anymore — no
 reading to see how to reach <code>cv3401</code>, where you’re actually
 allowed to work.</p>
 </div>
-<div class="callout-danger">
-<p><strong>Important: you must</strong> execute the following command,
-<strong>EVERY TIME</strong> you log on to Mammoth:</p>
-</div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">newgrp</span> def-ilafores</span></code></pre></div>
+<div class="callout-danger">
+<p><strong>Important: you must</strong> execute that command
+<strong>EVERY TIME</strong> you log on!</p>
+</div>
 <p>Otherwise, any file you create will only be readable and writable by
 you. Do not add the newgrp command to your bashrc, tempting as it may
 be.</p>
@@ -1990,7 +1983,7 @@ be.</p>
 (iv12)</h1>
 <p>Add a few lines to your <code>.bashrc</code> file, which is executed
 every time you login.</p>
-<div class="callout-danger">
+<div class="callout-note">
 <p>This code block only needs to be executed <strong>once</strong>,
 ever!</p>
 </div>

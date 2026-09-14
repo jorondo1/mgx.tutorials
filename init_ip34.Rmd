@@ -29,7 +29,7 @@ This tutorial is tailored for members of the [Laforest Lab](https://www.laforest
 </div>
 
 <div class="callout-danger">
-Since summer 2026, iv12 is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
+As of summer 2026, iv12 (formerly ip34) is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
 </div>
 
 ---
@@ -137,13 +137,13 @@ When you see `>`at the bottom, that means Mammouth is ready to receive commands!
 **Remember: you are still on the login node (`iv12`) at this point.** Nothing computational runs here anymore — no `R`, no scripts, nothing that uses real CPU or memory. Keep reading to see how to reach `cv3401`, where you're actually allowed to work.
 </div>
 
-<div class="callout-danger">
-**Important: you must** execute the following command, **EVERY TIME** you log on to Mammoth:
-</div>
-
 ```bash
 newgrp def-ilafores
 ```
+
+<div class="callout-danger">
+**Important: you must** execute that command **EVERY TIME** you log on!
+</div>
 
 Otherwise, any file you create will only be readable and writable by you. Do not add the newgrp command to your bashrc, tempting as it may be.
 
@@ -153,7 +153,7 @@ Otherwise, any file you create will only be readable and writable by you. Do not
 
 Add a few lines to your `.bashrc` file, which is executed every time you login.
 
-<div class="callout-danger">
+<div class="callout-note">
 This code block only needs to be executed **once**, ever!
 </div>
 
