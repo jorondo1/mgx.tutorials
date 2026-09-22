@@ -29,7 +29,7 @@ This tutorial is tailored for members of the [Laforest Lab](https://www.laforest
 </div>
 
 <div class="callout-danger">
-As of summer 2026, iv12 (formerly ip34) is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
+As of summer 2026, iv12 (formerly iv12) is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
 </div>
 
 ---
@@ -38,7 +38,7 @@ Steps 1, 2 and 4 only need to be done once.
 
 # Create a DRAC account
 
-To work on ip34, you need a [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) account. Ask your director for their sponsorship code. For help, visit their [FAQ](https://docs.alliancecan.ca/wiki/Frequently_Asked_Questions_about_the_CCDB/fr).
+To work on iv12, you need a [Digital Research Alliance of Canada](https://ccdb.alliancecan.ca/security/login) account. Ask your director for their sponsorship code. For help, visit their [FAQ](https://docs.alliancecan.ca/wiki/Frequently_Asked_Questions_about_the_CCDB/fr).
 
 ---
 
@@ -101,7 +101,7 @@ ssh username@iv12.ccs.usherbrooke.ca
 ```
 
 <div class="callout-note">
-**Note:** confirm this hostname with your lab/sysadmin if it doesn't resolve — it's the direct rename of the old `ip34.ccs.usherbrooke.ca` address, but double-check before relying on it.
+**Note:** confirm this hostname with your lab/sysadmin if it doesn't resolve — it's the direct rename of the old `iv12.ccs.usherbrooke.ca` address, but double-check before relying on it.
 </div>
 
 You will be prompted with 2FA, which will look like:
@@ -133,8 +133,8 @@ You can reach old directories with:
 ```
 When you see `>`at the bottom, that means Mammouth is ready to receive commands! (The exact banner text may differ slightly post-restructuring, but the cluster underneath — Mp2b — is the same.)
 
-<div class="callout-danger">
-**Remember: you are still on the login node (`iv12`) at this point.** Nothing computational runs here anymore — no `R`, no scripts, nothing that uses real CPU or memory. Keep reading to see how to reach `cv3401`, where you're actually allowed to work.
+<div class="callout-note">
+**Remember: you are still on the login node (`iv12`) at this point.** Nothing computational should be run here, nothing that uses real CPU or memory. Keep reading to see how to reach `cv3401`, where you're actually allowed to work.
 </div>
 
 ```bash
@@ -142,7 +142,11 @@ newgrp def-ilafores
 ```
 
 <div class="callout-danger">
-**Important: you must** execute that command **EVERY TIME** you log on!
+Two things:
+
+1. **You must** execute that command **EVERY TIME** you log on!
+
+2. Here `def-ilafores` is an example. On your DRAC account online, look for the Group Name you are assigned to in your allocations (in Home).
 </div>
 
 Otherwise, any file you create will only be readable and writable by you. Do not add the newgrp command to your bashrc, tempting as it may be.
@@ -165,8 +169,8 @@ echo umask 007 >> ~/.bashrc
 echo export MUGQIC_INSTALL_HOME=/cvmfs/soft.mugqic/CentOS6 >> ~/.bashrc 
 echo 'module use $MUGQIC_INSTALL_HOME/modulefiles'  >> ~/.bashrc			
 
-# Create a $ILAFORES variable:
-echo export ILAFORES=/jbod2/def-ilafores >> ~/.bashrc
+# Create a shortuc ofr your group's folder:
+echo export MY_GROUP=/net/nfs-bio/jbod2/def-ilafores >> ~/.bashrc
 
 # add a little reminder ...
 echo echo "REMINDER: change group id before working!" >> ~/.bashrc
@@ -177,8 +181,9 @@ source ~/.bashrc
 
 ```
 
+
 <div class="callout-note">
-Each command with `>>` appends something to the `.bashrc` file. If you do them multiple times, you'll be adding multiple lines to it. `.bashrc` is a file that is executed each time you log in, so you can add more variable definitions to it, which we'll do below.
+`>>` appends something to the `.bashrc` file. `.bashrc` is a file that is executed each time you log in, so you can add more variable definitions to it, which we'll do below.
 </div>
 
 I suggest adding another variable to your `.bashrc` that will contain the path to your project directory, allowing you to move to that directory without having to type the full path every time.
@@ -187,7 +192,7 @@ In the following, replace `your_project_name` with the name you want your projec
 
 ```{bash project}
 # Makes sure the variable exists whenever you log in:
-echo "export PROJECT1=$ILAFORES/analysis/your_project_name" >> ~/.bashrc
+echo "export PROJECT1=$MY_GROUP/analysis/your_project_name" >> ~/.bashrc
 
 # execute the bashrc:
 source ~/.bashrc
@@ -264,7 +269,7 @@ module load StdEnv/2023 r/4.4.0 mugqic/cutadapt/2.10
 nice R
 ```
 
-<div class="callout-ip34">
+<div class="callout-iv12">
 `cv3401` is shared with the rest of the lab, so `salloc` is what keeps everyone's usage fair and visible — instead of everyone informally self-limiting on a shared login node, Slurm now enforces it by only ever giving you the slice you asked for. Still be considerate: don't request more cores/memory/time than you need, and release your allocation (see below) as soon as you're done rather than leaving it idle.
 </div>
 
@@ -303,11 +308,11 @@ To learn more about tmux (like how to see multiple sessions simultaneously), che
 
 # Visualizing output files locally
 
-When you generate plots or other output files on ip34, you can't open them directly because there is no graphic interface. To view them, you need to **download them to your local computer** using `scp` (Secure Copy Protocol) or `rsync``. This is done from a **local terminal** (not from your ip34 session).
+When you generate plots or other output files on iv12, you can't open them directly because there is no graphic interface. To view them, you need to **download them to your local computer** using `scp` (Secure Copy Protocol) or `rsync``. This is done from a **local terminal** (not from your iv12 session).
 
-## Finding the path on ip34
+## Finding the path on iv12
 
-First, you need the full path to the file or folder you want to download. In your ip34 session, navigate to the relevant directory and run:
+First, you need the full path to the file or folder you want to download. In your iv12 session, navigate to the relevant directory and run:
 
 ```{bash, eval=FALSE}
 echo $PWD
@@ -320,17 +325,17 @@ This prints the absolute path to your current directory, e.g.:
 ```
 
 <div class="callout-danger">
-These are not R commands! You need access to a bash shell to do this. All the more reason to work with `tmux`, because now you can just detach from your session (`crtl+b`, then `d`); you'll land in your home session on ip34. There, you can run the command above to find the path to the desired output folder. 
+These are not R commands! You need access to a bash shell to do this. All the more reason to work with `tmux`, because now you can just detach from your session (`crtl+b`, then `d`); you'll land in your home session on iv12. There, you can run the command above to find the path to the desired output folder. 
 </div>
 
 ## Downloading your files {.tabset}
 
-This part needs to be done from a local shell, meaning a new shell that's not connected to ip34.
+This part needs to be done from a local shell, meaning a new shell that's not connected to iv12.
 
 Generally, it looks like this (example with `scp`)
 
 ```{bash, eval=FALSE}
-scp -r username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination
+scp -r username@iv12.ccs.usherbrooke.ca:/path/to/source /path/to/local/destination
 ```
 
 - `-r` copies directories recursively, so you don't have to point to individual files; you can copy the entire output directory and its content, e.g. `X_DADA_Summary` from the [improved DADA2 pipeline](https://jorondo1.github.io/mgx.tutorials/dada2_16S_tutorial.html).
@@ -338,14 +343,14 @@ scp -r username@ip34.ccs.usherbrooke.ca:/path/to/source /path/to/local/destinati
 - The part after `:` is the absolute path of the directory you want to copy, found with `echo $PWD`
 - The second part is where on your computer you want these files copied
 
-This command will prompt your for your ip34 password every time, including 2FA if applicable.
+This command will prompt your for your iv12 password every time, including 2FA if applicable.
 
 ### On a Mac
 
 Open a new Terminal window and run:
 
 ```{bash, eval=FALSE}
-rsync -avr username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/
+rsync -avr username@iv12.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/X_DADA_Summary ~/Documents/my_project/
 ```
 
 `rsync` is available natively on Mac and will sync only files that have changed, making repeated transfers much faster.
@@ -355,7 +360,7 @@ rsync -avr username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_My
 Open a new PowerShell window and run:
 
 ```{bash, eval=FALSE}
-scp -r username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:\Users\YourName\Documents\my_project\
+scp -r username@iv12.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProject/output_plots C:\Users\YourName\Documents\my_project\
 ```
 
 <div class="callout-note">
@@ -369,7 +374,7 @@ scp -r username@ip34.ccs.usherbrooke.ca:/jbod2/def-ilafores/analysis/2026_MyProj
 Save yourself time in the future...
 </summary>
 
-Once you've build your rsync or scp command, copy it somewhere so you don't have to do rewrite it or find the path to the source folder from within ip34 every time. I like to leave mine commented at the top of my R script.
+Once you've build your rsync or scp command, copy it somewhere so you don't have to do rewrite it or find the path to the source folder from within iv12 every time. I like to leave mine commented at the top of my R script.
 
 </details>
 
