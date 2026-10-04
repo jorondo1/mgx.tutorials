@@ -29,7 +29,7 @@ This tutorial is tailored for members of the [Laforest Lab](https://www.laforest
 </div>
 
 <div class="callout-danger">
-As of summer 2026, iv12 (formerly iv12) is accessible via a **login node** where no computation of any kind is allowed. All actual work happens on `cv3401`, a large dedicated compute node you need to access once you are logged in. Essentially, you log into `hpc-bio.ccs.usherbrooke.ca`, then connect to `cv3401` before doing anything else.
+As of summer 2026, iv12 (formerly ip34) is accessible via a **login node** where no computation of any kind is allowed. All actual work must happen on `cv3401`, a large dedicated compute node. Essentially, you log into iv12 via `hpc-bio.ccs.usherbrooke.ca`, then access `cv3401` using an `salloc` command. 
 </div>
 
 ---
