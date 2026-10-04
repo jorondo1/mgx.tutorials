@@ -97,7 +97,7 @@ All alliance supercomputers require 2-factor authentification using the DUO app.
 Whenever you want to access iv12, run this command with your DRAC username (will prompt for password; nothing shows when you'll write your password, that's normal!). Here, use the username to your DRAC account (not your email), for example:
 
 ```{bash login}
-ssh username@iv12.ccs.usherbrooke.ca
+ssh username@hpc-bio.ccs.usherbrooke.ca
 ```
 
 <div class="callout-note">
@@ -212,7 +212,7 @@ cd $PROJECT1
 Check out [this cool tutorial](https://astrobiomike.github.io/unix/unix-intro) to learn how to get around a little more using this language (bash). Calcul Québec  also regularly give 3-hour workshops on command line (bash) programming for Linux. Check out [their offer](https://www.calculquebec.ca/services-aux-chercheurs/formation/catalogue/).
 </div>
 
-You are not ready to "do science" quite yet, though — you're still on `iv12`, and no computation is allowed here. Keep reading.
+You are not ready to "do science" quite yet, though! You're still on `iv12`, and no computation is allowed here. Keep reading!
 
 ---
 
