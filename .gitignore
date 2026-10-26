@@ -4,6 +4,7 @@
 
 # Generic
 _archive/
+*_cache/
 .DS_Store
 tmp/
 bak/
