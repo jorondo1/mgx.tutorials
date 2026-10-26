@@ -3,6 +3,7 @@
 *.png
 
 # Generic
+_archive/
 .DS_Store
 tmp/
 bak/
