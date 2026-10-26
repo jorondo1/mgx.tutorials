@@ -1,0 +1,584 @@
+---
+title: "From DADA2 output to a Phyloseq object"
+author: "Jonathan Rondeau-Leclaire & Claude Opus 5.5"
+date: "`r Sys.Date()`"
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+    number_sections: true
+    css: mgx.tutorials.css
+---
+
+<div class="callout-note">
+**About this tutorial**
+
+The [DADA2 tutorial](dada2_16S_tutorial.html) ends with two tables: a sequence table (ASV counts per sample) and a taxonomy table. Before any ecological analysis, we need to clean them up and bundle them into a `phyloseq` object. A lot of analysis software uses phyloseq objects as a starting point, because they ensure the full consistency of your data: all samples have metadata and counts and all ASVs have taxonomy, with no extra and no missing. That object is the starting point of the [community composition tutorial](community_composition_tutorial.html), the tutorial that follows this one.
+
+Along the way, we'll peek at the data; it's important to keep an eye on it, make sure it makes sense, and become acquainted with it in order to know it better and make good science out of it.
+
+We use the raw 16S tables from [Poirier S., Rondeau-Leclaire J., et al 2026](https://www.sciencedirect.com/science/article/pii/S0048969726002846) (urban air samples).
+</div>
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+klippy::klippy(c('r'), color = 'lightblue', tooltip_message = 'Click to copy', position = c('top', 'right'), tooltip_success = 'Done')
+options(knitr.kable.NA = '')
+```
+
+# Setup
+
+Load the following packages; you might need to install some of them.
+
+```{r env}
+pacman::p_load(mgx.tools, tidyverse, phyloseq, decontam, kableExtra, knitr)
+```
+
+## Load the data
+
+Three files: the sequence table and the taxonomy table (both from DADA2), and the sample metadata. If you followed the DADA2 tutorial, you already have the `.RDS` files; replace the URLs with your own output.
+
+```{r load-data, cache = TRUE}
+repo <- 'https://raw.githubusercontent.com/jorondo1/urban_bioaerosols/main/data'
+
+seqtab   <- read_rds(file.path(repo, '16S/4_taxonomy/seqtab.RDS'))
+taxonomy <- read_rds(file.path(repo, '16S/4_taxonomy/taxonomy.RDS'))
+metadata <- read_delim(file.path(repo, 'metadata/metadata_2022_samples_final.csv'), delim = ';')
+```
+
+```{r dims}
+dim(seqtab)   # samples x ASVs
+dim(taxonomy) # ASVs x ranks
+```
+
+Each column of `seqtab` is an ASV, and each row of `taxonomy` describes one ASV. They should be in the same order:
+
+```{r aligned}
+identical(colnames(seqtab), rownames(taxonomy))
+```
+
+<div class="callout-note">
+The code below expects the taxonomy columns to be named `Kingdom`, `Phylum`, `Class`, `Order`, `Family`, `Genus`. Check yours with `colnames(taxonomy)`. If they differ (e.g. lowercase from DECIPHER), rename them: `colnames(taxonomy) <- c("Kingdom", "Phylum", ...)`. This will also make plotting simpler because we usually want the ranks capitalised.
+</div>
+
+## Subset samples [optional]
+
+For all sorts of reasons, you might not want to keep all of your samples. Here, our sequencing run also contained controls (ideally!) and samples from another side-project. In this specific project, the metadata table tells us which samples belong to the study: they have a sampling `time` and the `control` column value is FALSE. 
+
+
+```{r study-samples}
+count(metadata, time, control)
+
+meta_study <- filter(metadata, time != 'None' & !control)
+```
+
+<details>
+<summary>
+Metadata table missing something?
+</summary>
+Ideally, your metadata table gives you that information; if not, we recommend you write a short script that imports your metadata, modifies it to add a column with that information, and exports it again (perhaps as an .rds object). That script should be run before the one you are writing now. It will likely become useful when you start spotting errors or other missing variables along your project, because you can just go back to it, update it, run it, then rerun the script we are writing now to update the phyloseq object's metadata. For an example or inspiration, where a lot of metadata clean-up and preprocessing is being done, have a look at [this script](https://github.com/jorondo1/OrchardPhyllosphereInterannual/blob/main/src/0.3.2.Metadata_phyloseq.R) from Boutin et al., 2026.
+</details>
+
+
+Are all study samples from the metadata found in the sequence table? This should return `character(0)`, an empty vector (meaning: nothing). If it doesn't, some samples are either missing from the sequence table, or perhaps they are simply misnamed. Check these samples in the metadata and either fix them by hand or, more reproducibly, using a prior script as described in the info box above. 
+
+```{r missing}
+setdiff(meta_study$sample_id, rownames(seqtab))
+```
+
+And which sequenced samples are we leaving out?
+
+```{r left-out}
+setdiff(rownames(seqtab), meta_study$sample_id)
+```
+
+Controls and a handful of libraries from another project. We'll come back for the controls later.
+
+# Build the phyloseq object
+
+## The what?
+
+A `phyloseq` object is a relational database; it bundles together different tables and keeps them in sync. Each table has a unique "key" for each of its rows or columns (e.g., the sample name), which is uniquely found in another table, with no more, no fewer. We'll focus on three table types for now:
+
+| Table | Function | Contents |
+|---|---|---|
+| OTU table | `otu_table()` | Read counts, samples × ASVs |
+| Taxonomy table | `tax_table()` | Taxonomy of each ASV |
+| Sample data | `sample_data()` | Metadata of each sample |
+
+When you remove a sample or an ASV, phyloseq removes it from every table. No risk of misaligned tables! It prevents you from carrying ASV taxonomy that are nowhere to be found in your samples, or samples you don't care about. Note that you can also add phylogenetic trees to these objects; but let's keep that for another tutorial...
+
+## Build it!
+
+A few things to check or fix if you are using your own data instead of the provided toy dataset:
+
+- `sample_data()` needs the sample names as row names, hence `column_to_rownames()`.
+- `otu_table()` and `tax_table()` accept a matrix-type object; you can convert them using `as.matrix()` if `phyloseq()` throws an error
+
+```{r build-ps}
+ps_raw <- phyloseq(
+  otu_table(seqtab[meta_study$sample_id, ], taxa_are_rows = FALSE),
+  tax_table(taxonomy),
+  sample_data(column_to_rownames(meta_study, 'sample_id'))
+)
+ps_raw # look at it!
+```
+
+We dropped samples, so some ASVs might now have zero reads across all samples. `taxa_sums()` gives the total reads of each ASV; `prune_taxa()` keeps the ASVs for which the condition is `TRUE`.
+
+```{r prune-empty}
+ps_raw <- prune_taxa(taxa_sums(ps_raw) > 0, ps_raw)
+ps_raw
+```
+
+A few other functions you'll use all the time:
+
+```{r ps-functions}
+nsamples(ps_raw)              # number of samples
+ntaxa(ps_raw)                 # number of ASVs
+head(sample_names(ps_raw))    # sample names (showing first 6)
+sum(sample_sums(ps_raw))      # total number of reads
+```
+
+# Explore your samples
+
+## Sequencing depth
+
+`sample_sums()` gives the number of reads in each sample. Look at the smallest ones:
+
+```{r depth}
+sample_sums(ps_raw) %>% sort() %>% head(10)
+```
+Or build a histogram to see how depth is distributed:
+```{r depth-hist, fig.width=6, fig.height=3.5}
+hist(sample_sums(ps_raw), breaks = 50,
+     main = 'Reads per sample', xlab = 'Reads')
+```
+In this case, most samples have 15,000 to 30,000 reads. But `22-S-SHER-SH07` has only 21 reads: that sample probably failed sequencing. `22-E-SHER-SH09` is also very low. Keep them in mind for now; we'll take action later. 
+
+<div class="callout-note">
+**Your data will differ.** Some samples might have such a high sequencing depth that it makes more sense to look at the histogram of log-reads. The idea is to get a sense of what happens, as this will inform some of your analyses, especially those that rely on rarefaction. We'll tackle this in the next tutorial. Sequencing depth is a characteristic of these experiments that imposes a certain amount of trade-off decisions; discuss that distribution with your PI.
+</div>
+
+Here, we'll already take action and remove the super-low count sample, because 21 reads is a ridiculous number when the average sample has `r format(round(mean(sample_sums(ps_raw))), big.mark = ',')` reads!
+
+```{r remove-failed}
+ps_nonempty <- prune_samples(sample_sums(ps_raw)>21, ps_raw) %>% 
+  prune_taxa(taxa_sums(.) > 0, .) 
+ps_nonempty
+```
+The `prune_taxa()` line also removes ASVs that become absent across all samples. In this case there were none, so that line does nothing, but your project could differ.
+
+<div class="callout-danger">
+If you remove any sample here, make sure to leave a trace in your paper's methods section! The cutoff is somewhat of an arbitrary decision, even if it is justifiable. 
+</div>
+
+## ASV counts
+
+**TBD**
+
+## Study design
+
+Let's look at what we have in terms of our metadata. Think of your relevant sample categories -- treatment groups, time points, locations, etc. -- and adapt the following command to count the number of samples you have by categories. Here, for each city-time combination, we count the number of samples we have left.
+
+```{r design}
+samdat_as_tibble(ps_nonempty) %>%
+  count(city, time)
+```
+
+Is it what you expected? Make sure that any unbalances (a category ending up smaller than the other ones) can be explained. Was that the actual design? Or did you lose a bunch of samples when running DADA2? If that's what happened, can you track that loss through the pipeline, make sure it's not just a coding mistake? 
+
+This is a good time for a sanity check.
+
+# Inspect the taxonomy
+
+Here, we'll use different tools to inspect our tables from the point of view of the ASV's taxonomic annotations. In the next section, we'll remove what we don't need.
+
+<div class="callout-danger">
+The approach below is tailored to the toy dataset, which is 16S. If you are using other barcodes (e.g. ITS for fungi), some sections won't apply (e.g. mitochondria). However, keep your eyes open! Inspect the taxonomic ranks as much as you can, starting from the top. No primer is 100% specific...
+</div>
+
+## Higher ranks
+
+`get_taxa_unique()` lists the distinct names at a given rank.
+
+```{r kingdom}
+get_taxa_unique(ps_nonempty, 'Kingdom')
+```
+
+Archaea! Our primers target bacteria. A few archaea are expected because no primer is perfect, but they're not our target.
+
+```{r phylum}
+get_taxa_unique(ps_nonempty, 'Phylum')
+```
+
+Take the time to read through these. Do you see anything unexpected in your sampling environment? It's a good place to stop coding and start googling, or you can directly check on the website of the reference database you used (e.g. [SILVA](https://www.arb-silva.de/) for bacteria).
+
+<div class="callout-note">
+Typically, a 16S dataset will have thousands of taxa, so no need to check all of them individually down every taxonomic rank. With other clades (e.g. Fungi), however, it might be worth checking classes and perhaps also orders.
+</div>
+
+## Organelles
+
+Chloroplasts and mitochondria descend from bacteria, so their 16S gene gets amplified too. But at which rank do they show up? It depends on the reference database, so rather than guess, let's search the whole taxonomy table for these keywords:
+
+```{r organelle-search}
+organelle_regex <- regex('mitochondri|chloroplast', ignore_case = TRUE)
+
+tax_table(ps_nonempty) %>%
+  as.data.frame() %>%
+  pivot_longer(everything(), names_to = 'Rank', values_to = 'Name') %>%
+  filter(str_detect(Name, organelle_regex)) %>%
+  count(Rank, Name)
+```
+
+`pivot_longer()` stacks all the ranks into a single `Name` column, with a `Rank` column telling where each name came from. Then we only need to search one column: `filter()` keeps the names matching our keywords, and `count()` tells us how many ASVs have each name. `ignore_case = TRUE` catches every spelling (`Chloroplast`, `chloroplast`, ...).
+
+So in our database, chloroplasts are an Order, and mitochondria a Family. Now we know where to look. `subset_taxa()` keeps the ASVs that match a condition:
+
+```{r organelles}
+mito <- subset_taxa(ps_nonempty, Family == 'Mitochondria')
+chloro <- subset_taxa(ps_nonempty, Order == 'Chloroplast')
+
+ntaxa(mito); sum(taxa_sums(mito))
+ntaxa(chloro); sum(taxa_sums(chloro))
+```
+
+Which samples have the most organelle reads? In proportions:
+
+```{r mito-samples}
+(sample_sums(mito)/sample_sums(ps_nonempty)) %>% sort(decreasing = TRUE) %>% head(10)
+(sample_sums(chloro)/sample_sums(ps_nonempty)) %>% sort(decreasing = TRUE) %>% head(10)
+```
+
+<div class="callout-note">
+In microbial samples taken on/in plants, chloroplasts can make up most of the reads! Some 16S primers (like the 799F used here) are designed to avoid them, but they are not perfect.
+</div>
+
+## Unclassified ASVs
+
+Not every ASV can be classified down to Genus. These show up as `NA`:
+
+```{r na-count}
+colSums(is.na(tax_table(ps_nonempty)))
+```
+
+Some names also carry no real information, like `Incertae Sedis` ("of uncertain placement") or `Unknown Family`:
+
+```{r incertae}
+get_taxa_unique(ps_nonempty, 'Family') %>% 
+  str_subset(regex("Incertae|Unknown", ignore_case = TRUE))
+```
+
+You might feel like these carry true information; however, if we were to count the number of classified families, many different families might be classified as "Mycobacteriales Incertae Sedis", for example; you would count all of these as a single taxon. Since our taxonomy table already has the info that these ASVs are Mycobacteriales, that family identifier is useless. 
+
+# Clean up the taxonomy
+
+## Unclassified labels
+
+All of these are basically unclassified. Let's call them that, across all taxonomic ranks. Let's also replace missing values with the label 'Unclassified':
+
+```{r unclassified}
+ps_unclass <- ps_nonempty
+tax_table(ps_unclass)[is.na(tax_table(ps_unclass))] <- 'Unclassified'
+tax_table(ps_unclass)[grepl('Incertae|Unknown', tax_table(ps_unclass), ignore.case = TRUE)] <- 'Unclassified'
+```
+
+Check: no `NA` left?
+
+```{r na-check}
+colSums(is.na(tax_table(ps_unclass)))
+```
+
+<div class="callout-danger">
+**It's important to do the above before filtering taxa (below)!**
+
+Because for example, removing Mitochondria using `subset_taxa(ps, Family != 'Mitochondria')` would silently drop every ASV whose Family is `NA`, because `NA != 'Mitochondria'` is neither `TRUE` nor `FALSE`. You would lose thousands of perfectly good ASVs without noticing; even though they are unclassified at the family level, they are still informative ASVs we want to keep!
+</div>
+
+## Remove non-target taxa
+
+In light of the above, we'll remove archaea, mitochondria and chloroplasts. Additionally, we'll remove ASVs with no Phylum assignment; you don't have to do that, worth some thought or a discussion.
+
+First, we'll give each unwanted ASV a reason for removal, in the form of a new column. This will help us make a clean report at the end. 
+
+```{r nontarget}
+nontarget <- tax_table(ps_unclass) %>%
+  as.data.frame() %>%
+  rownames_to_column('ASV') %>%
+  mutate(
+    Reads = taxa_sums(ps_unclass),
+    reason = case_when(
+      Kingdom != 'Bacteria'    ~ 'Non-bacterial',
+      # ranks found with our keyword search above:
+      Family == 'Mitochondria' ~ 'Mitochondria',
+      Order == 'Chloroplast'   ~ 'Chloroplast',
+      Phylum == 'Unclassified' ~ 'Unclassified phylum')) %>%
+  filter(!is.na(reason))
+
+nontarget_summary <- nontarget %>%
+  group_by(reason) %>%
+  summarise(ASVs = n(), 
+            Reads = sum(Reads),
+            Reads_percentage = 100*Reads/sum(taxa_sums(ps_unclass)))
+
+nontarget_summary
+```
+
+`case_when()` stops at the first condition that is `TRUE`, so each ASV gets only one reason. As you can see, our primers were pretty good at excluding chloroplasts, but over 0.6% of all our reads were from mitochondria. Let's remove all of these:
+
+```{r remove-nontarget}
+ps_target <- prune_taxa(!taxa_names(ps_unclass) %in% nontarget$ASV, ps_unclass)
+ps_target
+```
+
+Since `prune_taxa()` wants to know which taxa to *keep*, we provide it with a TRUE/FALSE vector the same length as our total number of ASVs. `nontarget$ASV` is a vector of all ASVs we want to remove, and the `! ... %in%` helps us build that vector: taxa names that are NOT (`!`) in the `nontarget$ASV` vector become `TRUE`.
+
+# Remove contaminants
+
+## Negative controls
+
+Contaminants are DNA that didn't come from your samples: lab reagents, kits, handling. Negative controls (blanks) help identify them. The `decontam` [package] 
+(https://benjjneb.github.io/decontam/vignettes/decontam_intro.html) (Davis et al., 2018) flags ASVs that are **more prevalent in blanks than in samples**. 
+
+This project has three field blanks. Let's fetch them from the raw sequence table:
+
+```{r blanks}
+blanks <- metadata %>%
+  filter(time != 'None', control) %>%
+  pull(sample_id)
+
+rowSums(seqtab[blanks, ])
+```
+
+Stack the blanks under our samples, keeping only the ASVs that are still in `ps_target`:
+
+```{r counts}
+counts <- rbind(
+  as(otu_table(ps_target), 'matrix'),
+  seqtab[blanks, taxa_names(ps_target)]
+)
+is_blank <- rownames(counts) %in% blanks
+```
+
+How deeply sequenced are the blanks compared to our samples? Let's rank all samples by number of reads:
+
+```{r libsize-plot, fig.width=6, fig.height=3.5}
+tibble(Reads = rowSums(counts), is_blank = is_blank) %>%
+  arrange(Reads) %>%
+  mutate(Rank = row_number()) %>%
+  ggplot(aes(x = Rank, y = Reads, colour = is_blank)) +
+  geom_point() +
+  scale_colour_manual(values = c(`FALSE` = 'grey40', `TRUE` = 'red'),
+                      labels = c('Sample', 'Blank'), name = NULL) +
+  labs(x = 'Samples ranked by number of reads') +
+  theme_bw()
+```
+
+Blanks should have far fewer reads than most samples. Ours are at the low end, but one of them has more reads than a few real samples; that's not a red flag, because these are field blanks, handled like samples and exposed to the same environment. It's also why we look at *which* ASVs they contain rather than discarding them outright.
+
+## Run decontam
+
+Run decontam with the prevalence method:
+
+```{r decontam}
+contam <- isContaminant(
+  counts, neg = is_blank,
+  method = 'prevalence', threshold = 0.1)
+table(contam$contaminant)
+```
+
+## Look at them
+
+What proportion of blanks and of samples does each ASV appear in? `counts > 0` turns counts into `TRUE`/`FALSE` (present/absent), and `colMeans()` gives the proportion of `TRUE` for each ASV:
+
+```{r prev-plot, fig.width=5, fig.height=4}
+prev_df <- tibble(
+  pct_blanks  = 100 * colMeans(counts[is_blank, ] > 0),
+  pct_samples = 100 * colMeans(counts[!is_blank, ] > 0),
+  contaminant = contam$contaminant
+)
+
+prev_df %>%
+  filter(pct_blanks > 0) %>% # only ASVs found in at least one blank
+  ggplot(aes(x = pct_samples, y = pct_blanks, colour = contaminant)) +
+  geom_abline(linetype = 'dashed', colour = 'grey50') + # 1:1 line
+  geom_jitter(height = 3, width = 0, alpha = 0.5) +
+  scale_colour_manual(values = c(`FALSE` = 'grey40', `TRUE` = 'red')) +
+  scale_x_continuous(limits = c(0, 100)) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 33, 67, 100)) +
+  labs(x = '% of samples', y = '% of blanks') +
+  theme_bw()
+```
+
+Points above the dashed line are more prevalent in blanks than in samples. However, being above the line isn't enough: decontam runs a statistical test, and with so few blanks (=little power), an ASV must be *much* more prevalent in blanks to be flagged.
+
+What are they? Let's look at their p-values and where their reads come from:
+
+```{r contam-table}
+contaminants <- taxa_names(ps_target)[contam$contaminant]
+
+tax_table(ps_target)[contaminants, c('Phylum', 'Genus')] %>%
+  as.data.frame() %>%
+  mutate(p = contam[contaminants, 'p'],
+         Reads_blanks  = colSums(counts[is_blank, contaminants]),
+         Reads_samples = colSums(counts[!is_blank, contaminants])) %>%
+  arrange(p) %>%
+  as_tibble() %>%
+  head(10)
+```
+
+Do these make sense as contaminants? Many are common soil or skin bacteria. Together they represent only ~1,600 reads in our samples, so removing them has little impact.
+
+```{r remove-contam}
+ps_decontam <- prune_taxa(!contam$contaminant, ps_target)
+ps_decontam
+```
+
+## What's left in the blanks?
+
+decontam removed some ASVs, but the blanks still contain other taxa. Which ones, and are they also in our samples?
+
+```{r blanks-left}
+kept <- taxa_names(ps_decontam)
+
+tax_table(ps_decontam)[, c('Phylum' , 'Family', 'Genus')] %>%
+  as.data.frame() %>%
+  mutate(Reads_blanks  = colSums(counts[is_blank, kept]),
+         Reads_samples = colSums(counts[!is_blank, kept]),
+         pct_samples   = round(100 * colMeans(counts[!is_blank, kept] > 0), 1)) %>%
+  filter(Reads_blanks > 0) %>%
+  arrange(desc(Reads_blanks)) %>%
+  as_tibble() %>%
+  head(10)
+```
+
+Most of the ASVs that remain in blanks are also found in a large share of our samples (e.g. *Micrococcus* in over 75% of them), often with more reads than in the blanks. They could be real members of bioaerosols that ended up in the blanks, because field blanks are exposed to the same air. decontam can't (and shouldn't) remove these: they're part of the signal we're studying.
+
+Others, like the *Gaiella* ASV, are found in few samples and have more reads in blanks. They might be contaminants that decontam didn't have the statistical power to flag with only three blanks. Keep that in mind if one of them turns out to be important in your analyses.
+
+<div class="callout-danger">
+**How many controls do I need?**
+
+More is better. With few blanks, decontam has little statistical power, and its results depend a lot on which blanks you happened to collect. If your blanks are empty (they didn't even make it through DADA2), that's good news; it makes us more confident that there are no important contaminants.
+</div>
+
+<details>
+<summary>
+No blanks? Try the frequency method.
+</summary>
+If you measured DNA concentration for each sample, decontam can also flag ASVs whose relative abundance *decreases* as DNA concentration increases. Contaminant DNA is roughly constant, so it weighs more in low-DNA samples.
+
+```{r freq-method, eval = FALSE}
+# concDNA must be a column of your sample data:
+contam_freq <- isContaminant(
+  ps_target, conc = 'concDNA',
+  method = 'frequency', threshold = 0.1)
+table(contam_freq$contaminant)
+```
+</details>
+
+# Remove low-depth samples
+
+We already removed the failed sample (the one with 21 reads), but remember `22-E-SHER-SH09`? 
+
+```{r low-depth}
+sample_sums(ps_decontam) %>% sort() %>% head()
+```
+
+There's a big gap between the smallest sample and the rest. We can choose to drop samples with fewer than a certain number of reads.
+
+`prune_samples()` works like `prune_taxa()`, but on samples:
+
+```{r remove-low-depth}
+ps_depth <- prune_samples(sample_sums(ps_decontam) >= 5000, ps_decontam) %>% 
+  prune_taxa(taxa_sums(.)>0, .) # always flush the all-zero ASVs 
+```
+
+<div class="callout-note">
+**There is no objectively good threshold**. Here, we see what we consider to be an outlier, and we decide that 1879 reads is not enough. Look at your own distribution and find where the "tail" of low samples starts. Rarefaction curves (`vegan::rarecurve()`) can also help.
+</div>
+
+# Remove rare ASVs
+
+ASVs with very few reads across the whole dataset can either be extremely rare variants or sequencing errors that DADA2 couldn't resolve. Let's see how many ASVs have fewer than 10 reads, and how many reads they represent:
+
+```{r rare-count}
+rare <- taxa_sums(ps_depth) < 10
+sum(rare)                     # number of rare ASVs
+sum(taxa_sums(ps_depth)[rare]) / sum(taxa_sums(ps_depth)) # proportion of reads
+```
+
+About **a third of all our ASVs** have fewer than 10 reads *total*, but together they represent ~1% of reads. This is typical: most ASVs are rare, and most reads come from a few abundant ASVs.
+
+```{r remove-rare}
+ps_final <- prune_taxa(taxa_sums(ps_depth) >= 10, ps_depth)
+ps_final
+```
+
+<div class="callout-danger">
+Like the depth threshold, 10 is arbitrary. Removing them will affect estimates of presence-absence diversity metrics like richness. However, are ASVs that are this rare really something you want to include? If you use abundance-aware diversity metrics, they won't really matter. If you rarefy your datasets (which, for some analyses, you should), they are probably all going to disappear anyway. Removing them now helps make your dataset lighter, but this represents a decision you need to be able to justify. 
+</div>
+
+# Final object
+
+Save it! This is the object you'll use for all downstream analyses, like the [community composition tutorial](community_composition_tutorial.html).
+
+```{r save, eval = FALSE}
+write_rds(ps_final, 'ps_16S_clean.rds')
+```
+
+# Report
+
+What did we lose along the way? Put every object in a named list, then count samples, ASVs and reads in each:
+
+```{r report}
+steps <- list(
+  'Study samples'             = ps_raw,
+  'Failed sample removed'     = ps_nonempty,
+  'Non-target taxa removed'   = ps_target,
+  'Contaminants removed'      = ps_decontam,
+  'Low-depth samples removed' = ps_depth,
+  'Rare ASVs removed'         = ps_final
+)
+
+report <- imap(steps, function(ps, step) {
+  tibble(Step = step,
+         Samples = nsamples(ps),
+         ASVs = ntaxa(ps),
+         Reads = sum(sample_sums(ps)))
+}) %>%
+  list_rbind() %>%
+  mutate(`ASVs removed`  = lag(ASVs) - ASVs,
+         `Reads removed` = lag(Reads) - Reads,
+         `% initial reads kept`  = round(100 * Reads / first(Reads), 1))
+report
+```
+
+Add the non-target breakdown and format in an exportable table:
+
+```{r report-kable}
+breakdown <- nontarget_summary %>%
+  transmute(Step = reason, `ASVs removed` = ASVs, `Reads removed` = Reads)
+
+report_full <- bind_rows(report[1:3, ], breakdown, report[4:6, ])
+
+report_kable <- report_full %>%
+  kable(format.args = list(big.mark = ','),
+        caption = 'Samples, ASVs and reads at each post-processing step') %>%
+  kable_styling(full_width = FALSE) %>%
+  add_indent(4:(3 + nrow(breakdown)))
+
+report_kable
+```
+
+```{r report-save, eval = FALSE}
+save_kable(report_kable, 'postprocessing_report.html')
+```
+
+We lost over a third of the ASVs, but only ~2% of the reads. That's what we want: the removed ASVs were super rare, and the bulk of the signal is still there.

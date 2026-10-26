@@ -18,7 +18,7 @@ output:
 <div class="callout-note">
 **About this tutorial**
 
-Once you have a `phyloseq` object (ASV/OTU table + taxonomy + sample metadata, all linked together), three analyses come up again and again: a **composition barplot** (relative abundance by taxonomic rank), an **alpha diversity** comparison (within-sample diversity across groups), and a **beta diversity** ordination (between-sample dissimilarity, e.g. a PCoA). This tutorial builds all three, one at a time, from the same publicly available phyloseq object.
+Once you have a `phyloseq` object (ASV/OTU table + taxonomy + sample metadata, all linked together), three analyses come up again and again: a **composition barplot** (relative abundance by taxonomic rank), an **alpha diversity** comparison (within-sample diversity across groups), and a **beta diversity** ordination (between-sample dissimilarity, e.g. a PCoA). This tutorial builds all three, one at a time, from the same publicly available phyloseq object. To build your own phyloseq object from DADA2 outputs, see the [post-processing tutorial](postprocessing_phyloseq_tutorial.html).
 
 It's adapted from a real analysis script, [`5.2_Figs3_4_5_Plots_byCity.R`](https://github.com/jorondo1/urban_bioaerosols/blob/main/scripts/5.2_Figs3_4_5_Plots_byCity.R), which builds a publication-grade multi-panel figure, published in STOTEN by [Poirier S., Rondeau-Leclaire J., et al 2026](https://www.sciencedirect.com/science/article/pii/S0048969726002846). That version relies on more advanced coding, so we're going to do a simplified version of one of these plots.
 

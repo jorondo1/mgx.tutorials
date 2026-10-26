@@ -788,9 +788,7 @@ write_rds(taxonomy, file.path(path_out, 'taxonomy.RDS'), compress = 'gz')
 ```
 
 <div class="callout-note">
-**Coming soon:** processing raw ASV sequence and taxonomy tables to build a relational (phyloseq) database to use as a starting point in ecological analyses.
-
-This includes more refined ways of filtering ASVs based on prevalence, abundance, and taxonomic classification. Coming up!
+**Next step:** clean these tables and build a phyloseq object, the starting point of ecological analyses. See the [post-processing tutorial](postprocessing_phyloseq_tutorial.html).
 </div>
 
 <details>
