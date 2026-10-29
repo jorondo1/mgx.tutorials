@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mgx.tutorials</title>
+  <meta name="description" content="Tutorials for amplicon and metagenomics bioinformatics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap">
+  <style>
+    :root {
+      --blue: #1D5378;
+      --ink: #2c3e50;
+      --muted: #6b7a89;
+      --accent: #e07b00;
+      --line: #dde3e8;
+      --bg: #ffffff;
+      --card: #f7f9fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Lato, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 16px 64px;
+    }
+    h1 {
+      font-size: 28px;
+      color: var(--blue);
+      margin: 0 0 4px;
+    }
+    .lede { color: var(--muted); margin: 0 0 32px; }
+    h2 {
+      font-size: 18px;
+      margin: 36px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+    }
+    ol.tutorials {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: step;
+    }
+    ol.tutorials li {
+      counter-increment: step;
+      position: relative;
+      margin: 0 0 12px;
+    }
+    ol.tutorials a {
+      display: block;
+      padding: 14px 16px 14px 56px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--blue);
+      border-radius: 4px;
+      color: inherit;
+      text-decoration: none;
+    }
+    ol.tutorials a::before {
+      content: counter(step);
+      position: absolute;
+      left: 18px;
+      top: 14px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 24px;
+      text-align: center;
+    }
+    ol.tutorials a:hover,
+    ol.tutorials a:focus-visible {
+      border-left-color: var(--accent);
+      background: #fff4e6;
+    }
+    ol.tutorials a:hover::before,
+    ol.tutorials a:focus-visible::before { background: var(--accent); }
+    .title { display: block; font-weight: 700; color: var(--blue); }
+    .desc { display: block; color: var(--muted); font-size: 14px; }
+    footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a { color: var(--blue); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>mgx.tutorials</h1>
+    <p class="lede">Tutorials for amplicon and metagenomics bioinformatics, and for logging onto Université de Sherbrooke's iv12 compute cluster for the first time.</p>
+
+    <h2>Getting set up</h2>
+    <ol class="tutorials">
+      <li>
+        <a href="init_ip34.html">
+          <span class="title">Getting started on iv12 (Mammouth)</span>
+          <span class="desc">Logging onto the UdS cluster and setting up your workspace.</span>
+        </a>
+      </li>
+    </ol>
+
+    <h2>16S amplicon workflow</h2>
+    <p>These tutorials follow each other: the output of one is the input of the next.</p>
+    <ol class="tutorials" style="counter-reset: step 1;">
+      <li>
+        <a href="dada2_16S_tutorial.html">
+          <span class="title">DADA2: 16S rRNA processing</span>
+          <span class="desc">From paired-end short reads to an ASV table and taxonomy.</span>
+        </a>
+      </li>
+      <li>
+        <a href="postprocessing_phyloseq_tutorial.html">
+          <span class="title">From DADA2 output to a phyloseq object</span>
+          <span class="desc">Cleaning the ASV and taxonomy tables, exploring the data, and building a phyloseq object.</span>
+        </a>
+      </li>
+      <li>
+        <a href="community_composition_tutorial.html">
+          <span class="title">Community composition &amp; diversity</span>
+          <span class="desc">Composition barplots, alpha diversity, and beta diversity ordinations from a phyloseq object.</span>
+        </a>
+      </li>
+      <li>
+        <a href="">
+          <span class="title">Differential Abundance Analysis</span>
+          <span class="desc">Coming soon.</span>
+        </a>
+      </li>
+    </ol>
+
+    <footer>
+      Jonathan Rondeau-Leclaire · Laforest-Lapointe Lab ·
+      <a href="https://github.com/jorondo1/mgx.tutorials">Source on GitHub</a>
+    </footer>
+  </main>
+</body>
+</html>
