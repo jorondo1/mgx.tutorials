@@ -36,7 +36,7 @@ options(knitr.kable.NA = '')
 Load the following packages; you might need to install some of them.
 
 ```{r env}
-pacman::p_load(mgx.tools, tidyverse, phyloseq, decontam, kableExtra, knitr)
+pacman::p_load(mgx.tools, tidyverse, phyloseq, decontam, kableExtra, knitr, update = FALSE)
 ```
 
 ## Load the data
